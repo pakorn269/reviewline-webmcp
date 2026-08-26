@@ -1,0 +1,40 @@
+{
+  "name": "procurement-least-authority-journey",
+  "incidentId": "inc-001",
+  "manifests": [
+    {
+      "phase": "INVESTIGATION",
+      "tools": ["inspect_incident", "list_incidents"]
+    },
+    {
+      "phase": "INCIDENT_SELECTED",
+      "tools": ["inspect_incident", "list_incidents", "simulate_guardrail_patch"]
+    },
+    {
+      "phase": "REPLAY_READY",
+      "tools": ["draft_review_gate", "inspect_incident", "list_incidents", "simulate_guardrail_patch"]
+    },
+    {
+      "phase": "AWAITING_HUMAN_DECISION",
+      "tools": ["get_review_status", "inspect_incident", "list_incidents"]
+    },
+    {
+      "phase": "DECIDED",
+      "tools": ["get_review_status", "inspect_incident", "list_incidents"]
+    }
+  ],
+  "replay": {
+    "ruleKind": "spending_cap",
+    "threshold": 50000,
+    "enforcement": "block",
+    "triggerDecision": "BLOCKED",
+    "benignControlDecision": "ALLOWED",
+    "regressions": 0
+  },
+  "invariants": {
+    "forbiddenTools": ["approve", "reject", "activate", "deploy"],
+    "maxSerializedToolOutputCharacters": 1500,
+    "externalPolicyDeployment": false,
+    "blockedPurchaseAuthorized": false
+  }
+}

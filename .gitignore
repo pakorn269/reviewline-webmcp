@@ -1,34 +1,35 @@
 # Dependencies
 node_modules/
 
-# Build and coverage
+# Build output
 dist/
 coverage/
-.evals/
 
-# Test artifacts
+# Playwright
 playwright-report/
 test-results/
-blob-report/
 
-# Local environment and secrets
+# Environment and secrets
 .env
-.env.*
-!.env.example
-*.local
+.env.local
+.env.*.local
+*.pem
+*.key
 
-# Editor and OS
+# Editor
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Logs and caches
+# Logs
 *.log
 npm-debug.log*
-.vite/
 
-# Media generated for submission
-submission-media/
-*.mp4
-*.mov
+# TypeScript
+*.tsbuildinfo

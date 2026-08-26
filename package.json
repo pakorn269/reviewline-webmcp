@@ -1,0 +1,46 @@
+{
+  "name": "reviewline-webmcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reviewline – WebMCP-native incident review studio. Agents investigate. Humans authorize.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx --report-unused-disable-directives --max-warnings 0",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "smoke:native": "npm run build && node scripts/native-webmcp-smoke.mjs",
+    "audit:security": "npm audit --audit-level=moderate"
+  },
+  "dependencies": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.31.0",
+    "@playwright/test": "^1.62.1",
+    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/react": "16.3.0",
+    "@testing-library/user-event": "14.6.1",
+    "@types/react": "19.1.8",
+    "@types/react-dom": "19.1.6",
+    "@vitejs/plugin-react": "4.5.2",
+    "@vitest/coverage-v8": "^3.2.7",
+    "eslint": "9.31.0",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "eslint-plugin-react-refresh": "0.4.20",
+    "jsdom": "26.1.0",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.34.1",
+    "vite": "^6.4.3",
+    "vitest": "^3.2.7",
+    "webmcp-types": "^0.1.5"
+  }
+}

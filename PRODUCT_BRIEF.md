@@ -20,7 +20,7 @@ An AI platform safety or reliability lead who reviews remediation proposals for 
 4. The agent calls `simulate_guardrail_patch` with a structured deterministic rule. The page replays the triggering trace and a closely related benign control, then renders before/after outcomes, evidence links, and regressions.
 5. The agent calls `draft_review_gate`, creating a pending proposal with evidence, rationale, and replay results.
 6. The UI opens a review panel, enters `AWAITING_HUMAN_DECISION`, and visibly removes drafting from the available capability manifest. There is deliberately no agent-callable approval tool.
-7. The human reviews and clicks Approve or Reject.
+7. The human reviews, identifies themselves, records a note, confirms the evidence, and chooses a consequence-specific confirm or reject action; either way, the current block stays in force and no external policy is deployed.
 8. The agent calls `get_review_status` and reports the final human decision.
 
 ## WebMCP tools
@@ -53,7 +53,7 @@ An AI platform safety or reliability lead who reviews remediation proposals for 
 ### `get_review_status`
 - Purpose: read the human decision and policy-effect status for a proposal.
 - Inputs: proposal id.
-- Annotations: `readOnlyHint: true`, `untrustedContentHint: false`.
+- Annotations: `readOnlyHint: true`, `untrustedContentHint: true` because titles and reviewer notes are human-entered text.
 - UI effect: focuses the proposal/audit event.
 
 ## Human control invariant
@@ -84,7 +84,7 @@ All data is fictional, local, deterministic, and contains no real credentials, i
 
 ### In scope
 - React + TypeScript + Vite single-page app.
-- Local deterministic domain logic and fixtures; optional localStorage persistence with reset.
+- Local deterministic domain logic and fixtures; session-only workflow state with fresh reload/reset behavior.
 - Native imperative WebMCP via `document.modelContext.registerTool`.
 - Graceful unsupported-browser mode and in-app tool inspector/test harness for normal browsers.
 - State synchronization between tool execution and visible UI.
@@ -111,7 +111,7 @@ Original dark operations-console design informed by precise, low-chroma develope
 ## Acceptance criteria
 
 1. A fresh checkout installs and builds with documented commands.
-2. All five tools are registered when native WebMCP is available and are inspectable in fallback dev mode.
+2. The five tool contracts are implemented, while only the state-appropriate least-authority subset is registered and mirrored by fallback inspector mode at any moment.
 3. Each tool uses clear non-overlapping names/descriptions, JSON Schema, strict runtime validation, bounded structured output, and appropriate annotations.
 4. Tool calls update visible application state before resolving.
 5. The full demo journey works without network/API keys.
