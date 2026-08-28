@@ -224,6 +224,46 @@ test.describe('Reviewline — the human decision stays reachable', () => {
     }
   })
 
+  test('the Human review line remains wheel-scrollable in a short desktop viewport', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1025, height: 650 })
+    await page.goto('/')
+    await page.locator('.tool-inspector-summary').click()
+    await page.locator('.btn-hero-journey').click()
+    await expect(page.getByTestId('workflow-phase')).toContainText('AWAITING_HUMAN_DECISION')
+    await page.locator('.tool-inspector-summary').click()
+    await page.locator('.session-record-summary').click()
+
+    const column = page.locator('.app-col--review')
+    const before = await column.evaluate((element) => ({
+      clientHeight: element.clientHeight,
+      overflowY: getComputedStyle(element).overflowY,
+      scrollHeight: element.scrollHeight,
+      scrollTop: element.scrollTop,
+    }))
+
+    expect(before.overflowY).toBe('auto')
+    expect(before.scrollHeight).toBeGreaterThan(before.clientHeight)
+
+    await column.hover()
+    await page.mouse.wheel(0, 1200)
+    await expect
+      .poll(() => column.evaluate((element) => element.scrollTop))
+      .toBeGreaterThan(before.scrollTop)
+
+    for (const selector of ['.btn-approve', '.btn-reject']) {
+      const control = page.locator(selector)
+      await control.scrollIntoViewIfNeeded()
+      const controlIsInsideColumn = await control.evaluate((element) => {
+        const columnRect = document.querySelector('.app-col--review')!.getBoundingClientRect()
+        const rect = element.getBoundingClientRect()
+        return rect.top >= columnRect.top && rect.bottom <= columnRect.bottom
+      })
+      expect(controlIsInsideColumn).toBe(true)
+    }
+  })
+
   test('the review evidence body scrolls instead of pushing the decision away', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/')

@@ -833,3 +833,60 @@ node --test scripts/*.node-test.mjs
 ```
 
 Five preview lifecycle assertions fail around Windows child-process signal/cleanup behavior. Four portable-build cases cannot create their symlink fixtures and fail with `EPERM: operation not permitted, symlink ...`. The portable failures were also reproduced against clean `HEAD`, so they are not caused by this frontend redesign. These failures are reported rather than treated as passing or bypassed.
+## 2026-08-28 — Human review line scroll regression
+
+### RED — clipped desktop review content had no user-scrollable fallback
+
+**Behavior:** At the desktop breakpoint, a short viewport with the session record reopened must let a person wheel-scroll the Human review line and bring each consequence-specific decision action fully into view.
+
+```text
+npm run e2e -- --grep "Human review line remains wheel-scrollable"
+  Running 1 test using 1 worker
+  1 failed
+  Expected overflowY: "auto"
+  Received overflowY: "hidden"
+```
+
+The failure reproduced the reported layout bug at `1025 × 650`: the app shell and review panel clipped overflowing fixed tracks while the review column explicitly rejected user scrolling.
+
+### GREEN — review column is the overflow fallback
+
+Changed `.app-col--review` from `overflow: hidden` to `overflow-y: auto` and contained its vertical overscroll. The evidence body retains its focused inner scroll at comfortable desktop heights; the authority-zone column now becomes the fallback when the confirmation form or reopened session record exceeds available height.
+
+```text
+npm run e2e -- --grep "Human review line remains wheel-scrollable"
+  1 passed (8.1s)
+```
+
+The browser test verifies computed `overflow-y: auto`, real excess scroll height, wheel-driven `scrollTop` movement, and that both stacked human decision controls can each be scrolled fully inside the review-column viewport.
+
+### Responsive visual review
+
+Reviewed bounded screenshots for `1440 × 900` initial, pending, and decided states; the exact `1025 × 650` failing breakpoint after wheel scrolling; `1024 × 700` tablet; and `390 × 844` mobile. Desktop hierarchy and pinned confirmation behavior remain intact. Tablet and mobile continue to use document scrolling, with the complete review form and both actions reachable without overlap or clipping.
+
+### Final quality gates
+
+```text
+npm test
+  Test Files  17 passed (17)
+  Tests       342 passed (342)
+
+npm run typecheck
+  exit 0
+
+npm run lint
+  exit 0; zero warnings
+
+npm run build
+  vite v6.4.3; 53 modules transformed; exit 0
+
+npm run e2e
+  20 passed (17.1s)
+
+npm run audit:security
+  found 0 vulnerabilities
+
+$env:CHROME_BIN = "C:\Program Files\Google\Chrome\Application\chrome.exe"; npm run smoke:native
+  ok: true; Chrome 151.0.7922.174
+  finalStatus: approved; visibleTimelineEvents: 24; browserErrors: []
+```
