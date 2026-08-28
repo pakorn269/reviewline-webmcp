@@ -1,3 +1,7 @@
+// SessionTimeline — append-only record of every capability change, tool call,
+// result, and workflow transition in this session.
+// MIT License
+
 import type { SessionEvent } from '../domain/domain'
 import { useI18n } from '../i18n/I18nContext'
 import { getLocalizedEvent } from '../i18n/timelineTranslations'
@@ -10,10 +14,10 @@ export function SessionTimeline({ events }: Props) {
   const { t, language } = useI18n()
 
   return (
-    <section className="session-timeline" aria-label={t('sessionTimelineAria')}>
-      <h3 className="timeline-title">{t('sessionTimelineTitle')}</h3>
+    <section className="panel session-timeline" aria-label={t('sessionTimelineAria')}>
+      <h3 className="panel-title">{t('sessionTimelineTitle')}</h3>
       {events.length === 0 ? (
-        <p className="timeline-empty">{t('sessionTimelineEmpty')}</p>
+        <p className="empty-msg">{t('sessionTimelineEmpty')}</p>
       ) : (
         <ol className="timeline-list">
           {events.map((event) => {
@@ -26,7 +30,7 @@ export function SessionTimeline({ events }: Props) {
                   <time dateTime={event.ts}>{new Date(event.ts).toLocaleTimeString()}</time>
                 </div>
                 {event.toolName && <code className="timeline-tool">{event.toolName}</code>}
-                <p>{localized.detail}</p>
+                <p className="timeline-detail">{localized.detail}</p>
               </li>
             )
           })}
@@ -35,4 +39,3 @@ export function SessionTimeline({ events }: Props) {
     </section>
   )
 }
-

@@ -103,6 +103,14 @@ Reviewline provides a bilingual operator interface supporting English (`en`) and
 - **Presentation mapping:** `getLocalizedIncident` and `getLocalizedEvent` dynamically map incident summaries, traces, cohort cases, event kinds, and actor titles for human display when Thai mode is active without mutating underlying domain fixtures or affecting agent tool transactions.
 - **Accessibility:** The language toggle adheres to WCAG touch targets (44px min height/width), keyboard focus, and localized dynamic `aria-label` tags.
 
+## Operate-surface presentation architecture
+
+The interface is organized around a single live authority boundary rather than dashboard metrics. `AuthorityBar` renders the current workflow phase, all five canonical agent capabilities as `exposed` or `withheld`, and the separate human-only `approve`, `reject`, and `activate` actions as `never registered`. Its labels come from the canonical presentation manifest in `src/tools/manifest.ts`; registration policy remains owned by the domain and registration layers.
+
+`App.tsx` composes three operational regions: incident queue, investigation evidence, and human review. On desktop the regions scroll independently so long evidence cannot push the consequence-specific decision controls outside the review viewport. While a proposal awaits a person, the review panel uses a fixed header, scrollable evidence body, fixed confirmation form, and collapsed session record. Narrow layouts become a staged vertical flow without sticky queue behavior; interactive targets remain at least 44 CSS pixels. One tokenized near-black/cool-graphite stylesheet supplies the responsive 1440, 1024, 768, 390, and 320-pixel layouts, focus states, and reduced-motion behavior without gradients or glass effects.
+
+Presentation-side orchestration is deliberately separated from `App.tsx`: `useToolStateBridge` owns registration reconciliation and transaction-state acknowledgement, `useHotkey` owns document keyboard bindings, and `runHeroJourney` performs the deterministic demonstration sequence through the same direct tool runner used by the inspector. These helpers do not expand agent authority or bypass runtime validation.
+
 ## In-app interactive test harness and ELI5 guide
 
 To ensure full demonstrability on standard browsers lacking experimental WebMCP flags:
@@ -117,12 +125,18 @@ To ensure full demonstrability on standard browsers lacking experimental WebMCP 
 src/domain/domain.ts                 deterministic state and replay engine
 src/tools/tools.ts                   validation and bounded tool contracts
 src/tools/registration.ts            dynamic native registration, tool-call evidence, and direct runner
+src/tools/manifest.ts                canonical presentation manifest and human-only action list
+src/hooks/useToolStateBridge.ts      registration reconciliation and visible-state acknowledgement
+src/hooks/useHotkey.ts               document-level keyboard shortcut lifecycle
+src/lib/heroJourney.ts               deterministic interactive journey orchestrator
+src/lib/format.ts                    shared canonical presentation formatters
 src/i18n/types.ts                    strongly typed dictionary schema
 src/i18n/en.ts, th.ts                bilingual translation dictionaries
 src/i18n/I18nContext.tsx             state-driven i18n provider and hook
 src/i18n/incidentTranslations.ts     localized incident summary/trace/cohort mapper
 src/i18n/timelineTranslations.ts     localized session timeline mapper
 src/components/LanguageToggle.tsx    accessible EN/TH toggle component
+src/components/AuthorityBar.tsx      live exposed/withheld/never-registered authority boundary
 src/components/Eli5GuideModal.tsx    bilingual ELI5 mental model and 4 use cases modal
 src/components/ToolInspector.tsx     interactive tool execution harness and hero journey simulator
 src/components/SimulationView.tsx    per-case counterfactual UI

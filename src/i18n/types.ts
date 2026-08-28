@@ -1,7 +1,7 @@
 export type Language = 'en' | 'th'
 
 export interface TranslationDictionary {
-  // Shell / Header
+  // ── Shell / header ────────────────────────────────────────────────────────
   appTitle: string
   tagline: string
   webmcpActive: string
@@ -12,27 +12,49 @@ export interface TranslationDictionary {
   resetDemoStateAria: string
   toolInspectorSummary: string
 
-  // Language Toggle
+  // ── Language toggle ───────────────────────────────────────────────────────
   languageToggleAria: string
   langEn: string
   langTh: string
 
-  // Incident Queue
+  // ── Authority bar ─────────────────────────────────────────────────────────
+  authorityBarAria: string
+  phaseEyebrow: string
+  phaseInvestigation: string
+  phaseReplayReady: string
+  phaseAwaitingHumanDecision: string
+  phaseDecided: string
+  manifestTitle: string
+  manifestHint: string
+  exposureExposed: string
+  exposureWithheld: string
+  humanOnlyTitle: string
+  humanOnlyNote: string
+  exposureNever: string
+  humanActionApprove: string
+  humanActionReject: string
+  humanActionActivate: string
+
+  // ── Incident queue ────────────────────────────────────────────────────────
   incidentQueueTitle: string
   incidentQueueRegionAria: string
   selectedBadge: string
 
-  // Evidence Panel
+  // ── Evidence panel ────────────────────────────────────────────────────────
   evidencePanelTitle: string
   evidencePanelEmpty: string
+  evidencePanelEmptyHint: string
   evidenceWorkspaceAria: string
   evidenceForAria: string
   traceHeading: string
+  traceEntryAria: string
   cohortHeading: string
+  blockedAtLabel: string
 
-  // Simulation View
+  // ── Simulation view ───────────────────────────────────────────────────────
   simulationTitle: string
   simulationEmpty: string
+  simulationEmptyHint: string
   simCompleted: string
   simAria: string
   resultIdentity: string
@@ -44,33 +66,72 @@ export interface TranslationDictionary {
   thresholdLabel: string
   enforcementLabel: string
   noRegressions: string
-  regressionsDetected: string
+  simNoRegressionDetail: string
+  simRegressionFailedTitle: string
+  simRegressionFailedDetail: string
   cohortResultsAria: string
-  blockedCount: string
-  allowedCount: string
-  totalCases: string
+  simLabelBlocked: string
+  simLabelAllowed: string
+  simLabelTotal: string
+  simCaseTableAria: string
+  simColEvidenceCase: string
+  simColAmount: string
+  simColTransition: string
+  simBadgeTrigger: string
+  simBadgeBenign: string
+  simNotMonetary: string
   counterfactualReplay: string
 
-  // Review Panel
+  // ── Review panel ──────────────────────────────────────────────────────────
   reviewPanelAria: string
   reviewPanelTitle: string
   noProposalPending: string
   noProposalDesc: string
   humanReviewLine: string
   statusPending: string
+  statusApproved: string
+  statusRejected: string
   rationaleHeading: string
   notEligibleTitle: string
   notEligibleDesc: string
-  reviewerIdentityLabel: string
-  reviewerIdentityPlaceholder: string
-  reviewNoteLabel: string
-  reviewNotePlaceholder: string
-  confirmEvidenceLabel: string
-  confirmKeepPurchaseBlocked: string
-  confirmKeepRefundBlocked: string
-  confirmKeepDeploymentBlocked: string
+  decisionStateHeading: string
+  dsEnforcementOutcome: string
+  dsSimulationStatus: string
+  dsHumanReview: string
+  dsIncidentState: string
+  dsPolicyDeployment: string
+  simulationUnavailable: string
+  consequencesTitle: string
+  consequenceConfirm: string
+  consequenceReject: string
+  rulePurchaseCap: string
+  ruleRefundLimit: string
+  ruleEvidenceAge: string
+  ruleFallback: string
+  unauthorizedPurchase: string
+  unauthorizedRefund: string
+  unauthorizedDeployment: string
+  confirmActionPurchase: string
+  confirmActionRefund: string
+  confirmActionDeployment: string
   rejectProposalKeepBlock: string
+  replaySummaryLabel: string
+  replayFieldSimulation: string
+  replayFieldResult: string
+  replayFieldTrigger: string
+  replayFieldControl: string
+  replayFieldRegressions: string
+  recordedDecisionHeading: string
+  recordedDecisionBody: string
+  noteLabel: string
+  humanDecisionRequiredTitle: string
+  requiredConfirmationsHint: string
+  requiredMarker: string
+  reviewerIdentityLabel: string
+  reviewNoteLabel: string
+  confirmEvidenceLabel: string
   decisionRecorded: string
+  decisionRecordedNote: string
   purchaseRemainsBlocked: string
   refundRemainsBlocked: string
   deploymentRemainsBlocked: string
@@ -79,17 +140,19 @@ export interface TranslationDictionary {
   openStatus: string
   noExternalDeployment: string
 
-  // Audit Log
+  // ── Audit log ─────────────────────────────────────────────────────────────
   auditLogTitle: string
   auditLogEmpty: string
   auditLogAria: string
 
-  // Session Timeline
+  // ── Session timeline ──────────────────────────────────────────────────────
+  sessionRecordAria: string
+  sessionRecordSummary: string
   sessionTimelineTitle: string
   sessionTimelineEmpty: string
   sessionTimelineAria: string
 
-  // Tool Inspector
+  // ── Tool inspector ────────────────────────────────────────────────────────
   toolInspectorTitle: string
   toolInspectorAria: string
   registeredStatus: string
@@ -102,13 +165,15 @@ export interface TranslationDictionary {
   parametersLabel: string
   toolOutputLabel: string
 
-  // Guide Modal
+  // ── Guide modal ───────────────────────────────────────────────────────────
   guideButton: string
   guideButtonAria: string
   guideButtonTitle: string
   guideModalTitle: string
+  guideModalBadge: string
   guideModalCloseAria: string
   guideModalClose: string
+  guideSectionsAria: string
   guideTabConcept: string
   guideTabWebmcp: string
   guideTabUsecases: string
@@ -141,6 +206,10 @@ export interface TranslationDictionary {
   guideUsecase4Title: string
   guideUsecase4Desc: string
   guideUsecase4Demo: string
+  guideBadgeCritical: string
+  guideBadgeHigh: string
+  guideBadgeMedium: string
+  guideBadgeSafety: string
   guideTourTitle: string
   guideTourSubtitle: string
   guideTourStep1: string

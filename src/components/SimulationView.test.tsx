@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { SimulationView } from './SimulationView'
+import { I18nProvider } from '../i18n/I18nContext'
 import { makeInitialState, runSimulation, resetCounters } from '../domain/domain'
 
 describe('SimulationView', () => {
@@ -50,6 +51,36 @@ describe('SimulationView', () => {
     expect(screen.getByText('BENIGN CONTROL')).toBeInTheDocument()
     expect(screen.getByText('BLOCKED → BLOCKED')).toBeInTheDocument()
     expect(screen.getAllByText('ALLOWED → ALLOWED').length).toBeGreaterThan(0)
+  })
+
+  it('localizes outcome totals, case-table headers, and the regression verdict in Thai', () => {
+    resetCounters()
+    const { sim } = runSimulation(makeInitialState(), 'inc-001', 'spending_cap', 50000, 'block')
+    render(
+      <I18nProvider initialLanguage="th">
+        <SimulationView simulation={sim} />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('ถูกบล็อก')).toBeInTheDocument()
+    expect(screen.getByText('ได้รับอนุญาต')).toBeInTheDocument()
+    expect(screen.getByText('ทั้งหมด')).toBeInTheDocument()
+    expect(screen.getByText('กรณีหลักฐาน')).toBeInTheDocument()
+    expect(screen.getByText(/ตรวจไม่พบการถดถอย/)).toBeInTheDocument()
+    expect(screen.queryByText('Blocked')).not.toBeInTheDocument()
+    expect(screen.queryByText('Allowed')).not.toBeInTheDocument()
+    expect(screen.queryByText('Evidence case')).not.toBeInTheDocument()
+  })
+
+  it('localizes the regression failure verdict in Thai', () => {
+    resetCounters()
+    const { sim } = runSimulation(makeInitialState(), 'inc-001', 'spending_cap', 200000, 'block')
+    render(
+      <I18nProvider initialLanguage="th">
+        <SimulationView simulation={sim} />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('การควบคุมการถดถอยไม่ผ่าน')).toBeInTheDocument()
+    expect(screen.queryByText('Regression control failed')).not.toBeInTheDocument()
   })
 
   it('renders stale-evidence thresholds in hours rather than currency', () => {

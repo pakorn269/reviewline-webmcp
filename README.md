@@ -4,6 +4,22 @@
 
 **English** | [ภาษาไทย](README-TH.md)
 
+<p align="center">
+  <a href="https://pakorn269.github.io/reviewline-webmcp/"><strong>Open live app</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://youtu.be/eLkJEfHuumw"><strong>Watch demo video</strong></a>
+</p>
+
+[![Reviewline awaiting human decision — live agent capability manifest, incident evidence, and UI-only review controls](docs/images/reviewline-operate-surface.png)](https://pakorn269.github.io/reviewline-webmcp/)
+
+<p align="center"><em>Click the product preview to open the live application.</em></p>
+
+### Demo video
+
+[![Watch the Reviewline demo video](https://img.youtube.com/vi/eLkJEfHuumw/maxresdefault.jpg)](https://youtu.be/eLkJEfHuumw)
+
+<p align="center"><em>Click the video preview to watch the complete walkthrough on YouTube.</em></p>
+
 Reviewline is a WebMCP-native incident review studio for asymmetric human–agent collaboration. A browser agent investigates a failed autonomous-agent run, replays a candidate guardrail against a triggering case and a named benign control, and drafts an evidence-backed review gate. The agent then stops at a visible human decision line.
 
 The app is a deterministic, client-only contest demo: no backend, credentials, real payments, policy deployment, LLM API, or restored workflow state. Reload and Reset both start a fresh in-memory session.

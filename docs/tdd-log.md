@@ -738,3 +738,98 @@ npm run audit:security
 
 
 
+## 2026-08-28 — Operate-surface frontend redesign and presentation refactor
+
+### RED — live authority boundary
+
+**Behavior:** The page must show the current workflow phase, all five canonical WebMCP capabilities as exposed or withheld, and UI-only human actions as never registered.
+
+```text
+npx vitest run src/components/AuthorityBar.test.tsx
+  FAIL: unresolved ./AuthorityBar; no tests executed
+```
+
+The expected failure proved that the authority-boundary component did not yet exist.
+
+### GREEN — authority boundary
+
+```text
+npx vitest run src/components/AuthorityBar.test.tsx
+  Test Files  1 passed (1)
+  Tests       6 passed (6)
+```
+
+Added `AuthorityBar`, backed by the canonical presentation manifest in `src/tools/manifest.ts`. Approval, rejection, and activation remain visually separate UI-only actions and are not registered as WebMCP tools.
+
+### RED — bilingual simulation and consequence copy
+
+**Behavior:** Thai mode must translate simulation statistics/verdicts and consequence-specific confirmation/outcome copy without changing canonical machine data.
+
+```text
+npx vitest run src/components/SimulationView.test.tsx src/components/ReviewPanel.test.tsx
+  Tests  3 failed | 21 passed
+```
+
+The failures identified remaining English presentation strings in both components.
+
+### GREEN — typed dictionary-driven presentation
+
+```text
+npx vitest run src/components/AuthorityBar.test.tsx src/components/SimulationView.test.tsx src/components/ReviewPanel.test.tsx
+  Test Files  3 passed (3)
+  Tests       29 passed (29)
+```
+
+Added typed EN/TH keys and moved redesigned component copy through `t()` while preserving canonical tool names, evidence IDs, replay decisions, and tool payloads.
+
+### RED — immutable decided-state consequence language
+
+**Behavior:** After the reviewer decides, the review record must replace prospective confirmation language with the recorded decision and audit note.
+
+```text
+npx vitest run src/components/ReviewPanel.test.tsx -t "replaces prospective"
+  FAIL: prospective “Confirming retains the candidate...” copy remained visible after decision
+```
+
+### GREEN — recorded decision replaces prospective copy
+
+The decided branch now renders immutable-in-session decision and audit wording. The focused behavior is included in the final 17-test `ReviewPanel` suite and the complete 342-test run below.
+
+### Final quality gates
+
+```text
+npm test
+  Test Files  17 passed (17)
+  Tests       342 passed (342)
+
+npm run typecheck
+  exit 0
+
+npm run lint
+  exit 0; zero warnings
+
+npm run build
+  vite v6.4.3; 53 modules transformed; exit 0
+
+npm run e2e
+  19 passed (14.8s)
+
+npm run audit:security
+  found 0 vulnerabilities
+
+$env:CHROME_BIN = "C:\Program Files\Google\Chrome\Application\chrome.exe"; node scripts/native-webmcp-smoke.mjs
+  ok: true; Chrome 151.0.7922.174
+  five expected manifest phases; finalStatus: approved
+  visibleTimelineEvents: 24; browserErrors: []
+```
+
+Visual review covered 1440, 1024/900, 768, 390, and 320 CSS-pixel widths plus English, Thai, pending, decided, and guide-modal states. Playwright verifies minimum 44px mobile interaction targets and that review evidence scrolls without pushing human decision controls outside the review viewport.
+
+### Windows-only auxiliary script limitation
+
+```text
+node --test scripts/*.node-test.mjs
+  tests 33; pass 24; fail 9
+```
+
+Five preview lifecycle assertions fail around Windows child-process signal/cleanup behavior. Four portable-build cases cannot create their symlink fixtures and fail with `EPERM: operation not permitted, symlink ...`. The portable failures were also reproduced against clean `HEAD`, so they are not caused by this frontend redesign. These failures are reported rather than treated as passing or bypassed.

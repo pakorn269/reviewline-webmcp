@@ -1,17 +1,12 @@
+// SimulationView — reproducible counterfactual replay evidence.
+// MIT License
+
 import type { CohortCaseResult, SimulationResult } from '../domain/domain'
 import { useI18n } from '../i18n/I18nContext'
+import { formatUsd } from '../lib/format'
 
 interface Props {
   simulation: SimulationResult | null
-}
-
-function formatAmount(amount: number | undefined): string {
-  if (amount === undefined) return 'Not monetary'
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(amount)
 }
 
 function decisionPath(result: CohortCaseResult): string {
@@ -23,62 +18,85 @@ export function SimulationView({ simulation }: Props) {
 
   if (!simulation) {
     return (
-      <section className="simulation-view simulation-view--empty" aria-label="Simulation results">
-        <p className="simulation-empty-msg">{t('simulationEmpty')}</p>
+      <section
+        className="panel simulation-view simulation-view--empty"
+        aria-label={t('simulationTitle')}
+      >
+        <h3 className="panel-title">{t('simulationTitle')}</h3>
+        <p className="empty-msg">{t('simulationEmpty')}</p>
+        <p className="empty-hint">{t('simulationEmptyHint')}</p>
       </section>
     )
   }
 
   const hasRegressions = simulation.regressions.length > 0
+  const thresholdDisplay =
+    simulation.ruleKind === 'stale_evidence'
+      ? `${simulation.threshold} h`
+      : formatUsd(simulation.threshold)
+
+  const formatAmount = (amount: number | undefined): string =>
+    amount === undefined ? t('simNotMonetary') : formatUsd(amount)
 
   return (
-    <section className="simulation-view" aria-label={t('simAria', { simId: simulation.simId })}>
-      <header className="sim-header">
-        <div>
-          <p className="sim-eyebrow">{t('counterfactualReplay')}</p>
-          <h3 className="sim-title">Simulation {simulation.simId}</h3>
+    <section className="panel simulation-view" aria-label={t('simAria', { simId: simulation.simId })}>
+      <header className="panel-head">
+        <div className="panel-head-main">
+          <p className="panel-eyebrow">{t('counterfactualReplay')}</p>
+          <h3 className="panel-title sim-title">{t('simAria', { simId: simulation.simId })}</h3>
         </div>
-        <span className="sim-completion">{t('simCompleted')}</span>
+        <span className="badge badge--ok sim-completion">{t('simCompleted')}</span>
       </header>
 
-      <dl className="sim-provenance">
-        <div><dt>{t('resultIdentity')}</dt><dd><code>{simulation.resultId}</code></dd></div>
-        <div><dt>{t('baselinePolicy')}</dt><dd>{simulation.baselinePolicyVersion}</dd></div>
-        <div><dt>{t('candidatePolicy')}</dt><dd>{simulation.candidatePolicyVersion}</dd></div>
-        <div><dt>{t('executedAt')}</dt><dd><time dateTime={simulation.createdAt}>{new Date(simulation.createdAt).toLocaleString()}</time></dd></div>
-      </dl>
+      <div className="sim-verdict" role={hasRegressions ? 'alert' : undefined}>
+        {hasRegressions ? (
+          <div className="verdict verdict--fail">
+            <strong className="verdict-title">{t('simRegressionFailedTitle')}</strong>
+            <p className="verdict-detail">
+              {t('simRegressionFailedDetail', {
+                count: simulation.regressions.length,
+                cases: simulation.regressions.join(', '),
+              })}
+            </p>
+          </div>
+        ) : (
+          <div className="verdict verdict--pass">
+            <strong className="verdict-title">{t('noRegressions')}</strong>
+            <p className="verdict-detail">{t('simNoRegressionDetail')}</p>
+          </div>
+        )}
+        <dl className="sim-tally" aria-label={t('cohortResultsAria')}>
+          <div className="sim-stat sim-stat--blocked">
+            <dt>{t('simLabelBlocked')}</dt>
+            <dd>{simulation.blockedCount}</dd>
+          </div>
+          <div className="sim-stat sim-stat--allowed">
+            <dt>{t('simLabelAllowed')}</dt>
+            <dd>{simulation.allowedCount}</dd>
+          </div>
+          <div className="sim-stat">
+            <dt>{t('simLabelTotal')}</dt>
+            <dd>{simulation.blockedCount + simulation.allowedCount}</dd>
+          </div>
+        </dl>
+      </div>
 
       <div className="sim-rule-expression">
-        <span>{t('exactRule')}</span>
+        <span className="field-label">{t('exactRule')}</span>
         <code>{simulation.ruleExpression}</code>
       </div>
 
-      <div className="sim-meta">
-        <span className="sim-rule">{t('ruleLabel', { ruleKind: simulation.ruleKind })}</span>
-        <span className="sim-threshold">{t('thresholdLabel', { threshold: simulation.ruleKind === 'stale_evidence' ? `${simulation.threshold} h` : formatAmount(simulation.threshold) })}</span>
-        <span className="sim-enforcement">{t('enforcementLabel', { enforcement: simulation.enforcement })}</span>
-      </div>
+      <ul className="chip-row sim-meta">
+        <li className="chip">{t('ruleLabel', { ruleKind: simulation.ruleKind })}</li>
+        <li className="chip">{t('thresholdLabel', { threshold: thresholdDisplay })}</li>
+        <li className="chip">{t('enforcementLabel', { enforcement: simulation.enforcement })}</li>
+      </ul>
 
-      <div className="sim-cohort-results" aria-label="Candidate outcome totals">
-        <div className="sim-stat sim-stat--blocked">
-          <span className="sim-stat-label">Blocked</span>
-          <span className="sim-stat-value">{simulation.blockedCount}</span>
-        </div>
-        <div className="sim-stat sim-stat--allowed">
-          <span className="sim-stat-label">Allowed</span>
-          <span className="sim-stat-value">{simulation.allowedCount}</span>
-        </div>
-        <div className="sim-stat">
-          <span className="sim-stat-label">Total</span>
-          <span className="sim-stat-value">{simulation.blockedCount + simulation.allowedCount}</span>
-        </div>
-      </div>
-
-      <div className="sim-case-table" role="table" aria-label="Baseline and candidate case outcomes">
+      <div className="sim-case-table" role="table" aria-label={t('simCaseTableAria')}>
         <div className="sim-case-row sim-case-row--head" role="row">
-          <span role="columnheader">Evidence case</span>
-          <span role="columnheader">Amount</span>
-          <span role="columnheader">Baseline → candidate</span>
+          <span role="columnheader">{t('simColEvidenceCase')}</span>
+          <span role="columnheader">{t('simColAmount')}</span>
+          <span role="columnheader">{t('simColTransition')}</span>
         </div>
         {simulation.caseResults.map((result) => (
           <div
@@ -90,11 +108,17 @@ export function SimulationView({ simulation }: Props) {
               <code>{result.caseId}</code>
               <span>{result.label}</span>
               <span className="sim-case-badges">
-                {result.isTrigger && <strong className="case-badge case-badge--trigger">TRIGGER</strong>}
-                {result.isBenignControl && <strong className="case-badge case-badge--benign">BENIGN CONTROL</strong>}
+                {result.isTrigger && (
+                  <strong className="case-badge case-badge--trigger">{t('simBadgeTrigger')}</strong>
+                )}
+                {result.isBenignControl && (
+                  <strong className="case-badge case-badge--benign">{t('simBadgeBenign')}</strong>
+                )}
               </span>
             </div>
-            <span role="cell">{formatAmount(result.amount)}</span>
+            <span role="cell" className="sim-case-amount">
+              {formatAmount(result.amount)}
+            </span>
             <strong
               role="cell"
               className={`decision-path decision-path--${result.candidateDecision.toLowerCase()}`}
@@ -105,16 +129,30 @@ export function SimulationView({ simulation }: Props) {
         ))}
       </div>
 
-      {hasRegressions ? (
-        <div className="sim-regressions sim-regressions--warning" role="alert">
-          <strong>Regression control failed</strong>
-          <p>{simulation.regressions.length} baseline outcome(s) changed: {simulation.regressions.join(', ')}.</p>
+      <dl className="sim-provenance">
+        <div>
+          <dt>{t('resultIdentity')}</dt>
+          <dd>
+            <code>{simulation.resultId}</code>
+          </dd>
         </div>
-      ) : (
-        <div className="sim-regressions sim-regressions--ok">
-          <span className="sim-no-regression">No regressions — trigger remains blocked and benign controls remain allowed.</span>
+        <div>
+          <dt>{t('baselinePolicy')}</dt>
+          <dd>{simulation.baselinePolicyVersion}</dd>
         </div>
-      )}
+        <div>
+          <dt>{t('candidatePolicy')}</dt>
+          <dd>{simulation.candidatePolicyVersion}</dd>
+        </div>
+        <div>
+          <dt>{t('executedAt')}</dt>
+          <dd>
+            <time dateTime={simulation.createdAt}>
+              {new Date(simulation.createdAt).toLocaleString()}
+            </time>
+          </dd>
+        </div>
+      </dl>
     </section>
   )
 }

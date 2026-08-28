@@ -1,5 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+// Eli5GuideModal — plain-language explanation of the authority model plus the
+// real-world situations it maps onto.
+// MIT License
+
+import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n/I18nContext'
+import type { TranslationKey } from '../i18n/types'
 
 interface Eli5GuideModalProps {
   isOpen: boolean
@@ -8,41 +13,80 @@ interface Eli5GuideModalProps {
 
 type GuideTab = 'concept' | 'webmcp' | 'usecases' | 'tour'
 
+const TABS: { id: GuideTab; labelKey: TranslationKey }[] = [
+  { id: 'concept', labelKey: 'guideTabConcept' },
+  { id: 'webmcp', labelKey: 'guideTabWebmcp' },
+  { id: 'usecases', labelKey: 'guideTabUsecases' },
+  { id: 'tour', labelKey: 'guideTabTour' },
+]
+
+const USE_CASES: {
+  titleKey: TranslationKey
+  descKey: TranslationKey
+  demoKey: TranslationKey
+  badgeKey: TranslationKey
+  severity: string
+}[] = [
+  {
+    titleKey: 'guideUsecase1Title',
+    descKey: 'guideUsecase1Desc',
+    demoKey: 'guideUsecase1Demo',
+    badgeKey: 'guideBadgeCritical',
+    severity: 'critical',
+  },
+  {
+    titleKey: 'guideUsecase2Title',
+    descKey: 'guideUsecase2Desc',
+    demoKey: 'guideUsecase2Demo',
+    badgeKey: 'guideBadgeHigh',
+    severity: 'high',
+  },
+  {
+    titleKey: 'guideUsecase3Title',
+    descKey: 'guideUsecase3Desc',
+    demoKey: 'guideUsecase3Demo',
+    badgeKey: 'guideBadgeMedium',
+    severity: 'medium',
+  },
+  {
+    titleKey: 'guideUsecase4Title',
+    descKey: 'guideUsecase4Desc',
+    demoKey: 'guideUsecase4Demo',
+    badgeKey: 'guideBadgeSafety',
+    severity: 'safety',
+  },
+]
+
+const TOUR_STEPS: TranslationKey[] = [
+  'guideTourStep1',
+  'guideTourStep2',
+  'guideTourStep3',
+  'guideTourStep4',
+]
+
 export function Eli5GuideModal({ isOpen, onClose }: Eli5GuideModalProps) {
   const { t } = useI18n()
   const [activeTab, setActiveTab] = useState<GuideTab>('concept')
-  const modalRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!isOpen) return
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
     }
-
     window.addEventListener('keydown', handleKeyDown)
     closeButtonRef.current?.focus()
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
   if (!isOpen) return null
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose()
-    }
-  }
-
   return (
     <div
       className="modal-backdrop"
-      onClick={handleBackdropClick}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
       data-testid="guide-modal-backdrop"
     >
       <div
@@ -50,11 +94,10 @@ export function Eli5GuideModal({ isOpen, onClose }: Eli5GuideModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="guide-modal-title"
-        ref={modalRef}
       >
         <header className="guide-modal-header">
           <div className="guide-modal-header-info">
-            <span className="guide-modal-badge">GUIDE / ELI5</span>
+            <span className="panel-eyebrow">{t('guideModalBadge')}</span>
             <h2 id="guide-modal-title" className="guide-modal-title">
               {t('guideModalTitle')}
             </h2>
@@ -67,67 +110,37 @@ export function Eli5GuideModal({ isOpen, onClose }: Eli5GuideModalProps) {
             aria-label={t('guideModalCloseAria')}
             data-testid="guide-close-button"
           >
-            ✕
+            <span aria-hidden="true">×</span>
           </button>
         </header>
 
-        <nav className="guide-tabs" role="tablist" aria-label="Guide Sections">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'concept'}
-            className={`guide-tab ${activeTab === 'concept' ? 'guide-tab--active' : ''}`}
-            onClick={() => setActiveTab('concept')}
-          >
-            {t('guideTabConcept')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'webmcp'}
-            className={`guide-tab ${activeTab === 'webmcp' ? 'guide-tab--active' : ''}`}
-            onClick={() => setActiveTab('webmcp')}
-          >
-            {t('guideTabWebmcp')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'usecases'}
-            className={`guide-tab ${activeTab === 'usecases' ? 'guide-tab--active' : ''}`}
-            onClick={() => setActiveTab('usecases')}
-          >
-            {t('guideTabUsecases')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'tour'}
-            className={`guide-tab ${activeTab === 'tour' ? 'guide-tab--active' : ''}`}
-            onClick={() => setActiveTab('tour')}
-          >
-            {t('guideTabTour')}
-          </button>
+        <nav className="guide-tabs" role="tablist" aria-label={t('guideSectionsAria')}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              className={`guide-tab ${activeTab === tab.id ? 'guide-tab--active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {t(tab.labelKey)}
+            </button>
+          ))}
         </nav>
 
         <div className="guide-modal-body" role="tabpanel">
           {activeTab === 'concept' && (
-            <div className="guide-section animate-fade">
+            <div className="guide-section">
               <h3 className="guide-section-title">{t('guideConceptTitle')}</h3>
               <p className="guide-section-subtitle">{t('guideConceptSubtitle')}</p>
-
               <div className="guide-concept-grid">
                 <div className="guide-card guide-card--detective">
-                  <div className="guide-card-header">
-                    <h4>{t('guideDetectiveTitle')}</h4>
-                  </div>
+                  <h4>{t('guideDetectiveTitle')}</h4>
                   <p className="guide-card-text">{t('guideDetectiveDesc')}</p>
                 </div>
-
                 <div className="guide-card guide-card--judge">
-                  <div className="guide-card-header">
-                    <h4>{t('guideJudgeTitle')}</h4>
-                  </div>
+                  <h4>{t('guideJudgeTitle')}</h4>
                   <p className="guide-card-text">{t('guideJudgeDesc')}</p>
                 </div>
               </div>
@@ -135,10 +148,9 @@ export function Eli5GuideModal({ isOpen, onClose }: Eli5GuideModalProps) {
           )}
 
           {activeTab === 'webmcp' && (
-            <div className="guide-section animate-fade">
+            <div className="guide-section">
               <h3 className="guide-section-title">{t('guideWebmcpTitle')}</h3>
               <p className="guide-section-subtitle">{t('guideWebmcpSubtitle')}</p>
-
               <div className="guide-points-list">
                 <div className="guide-point-card">
                   <h4>{t('guideWebmcpPoint1Title')}</h4>
@@ -157,73 +169,43 @@ export function Eli5GuideModal({ isOpen, onClose }: Eli5GuideModalProps) {
           )}
 
           {activeTab === 'usecases' && (
-            <div className="guide-section animate-fade">
+            <div className="guide-section">
               <h3 className="guide-section-title">{t('guideUsecasesTitle')}</h3>
               <p className="guide-section-subtitle">{t('guideUsecasesSubtitle')}</p>
-
               <div className="guide-usecases-grid">
-                <div className="usecase-card">
-                  <div className="usecase-card-header">
-                    <h4>{t('guideUsecase1Title')}</h4>
-                    <span className="usecase-badge usecase-badge--critical">Critical</span>
+                {USE_CASES.map((useCase) => (
+                  <div key={useCase.titleKey} className="usecase-card">
+                    <div className="usecase-card-header">
+                      <h4>{t(useCase.titleKey)}</h4>
+                      <span className={`usecase-badge usecase-badge--${useCase.severity}`}>
+                        {t(useCase.badgeKey)}
+                      </span>
+                    </div>
+                    <p className="usecase-desc">{t(useCase.descKey)}</p>
+                    <p className="usecase-demo-tag">{t(useCase.demoKey)}</p>
                   </div>
-                  <p className="usecase-desc">{t('guideUsecase1Desc')}</p>
-                  <div className="usecase-demo-tag">{t('guideUsecase1Demo')}</div>
-                </div>
-
-                <div className="usecase-card">
-                  <div className="usecase-card-header">
-                    <h4>{t('guideUsecase2Title')}</h4>
-                    <span className="usecase-badge usecase-badge--high">High</span>
-                  </div>
-                  <p className="usecase-desc">{t('guideUsecase2Desc')}</p>
-                  <div className="usecase-demo-tag">{t('guideUsecase2Demo')}</div>
-                </div>
-
-                <div className="usecase-card">
-                  <div className="usecase-card-header">
-                    <h4>{t('guideUsecase3Title')}</h4>
-                    <span className="usecase-badge usecase-badge--medium">Medium</span>
-                  </div>
-                  <p className="usecase-desc">{t('guideUsecase3Desc')}</p>
-                  <div className="usecase-demo-tag">{t('guideUsecase3Demo')}</div>
-                </div>
-
-                <div className="usecase-card">
-                  <div className="usecase-card-header">
-                    <h4>{t('guideUsecase4Title')}</h4>
-                    <span className="usecase-badge usecase-badge--safety">Safety</span>
-                  </div>
-                  <p className="usecase-desc">{t('guideUsecase4Desc')}</p>
-                  <div className="usecase-demo-tag">{t('guideUsecase4Demo')}</div>
-                </div>
+                ))}
               </div>
             </div>
           )}
 
           {activeTab === 'tour' && (
-            <div className="guide-section animate-fade">
+            <div className="guide-section">
               <h3 className="guide-section-title">{t('guideTourTitle')}</h3>
               <p className="guide-section-subtitle">{t('guideTourSubtitle')}</p>
-
-              <div className="guide-steps-list">
-                <div className="guide-step-card">
-                  <span className="guide-step-num">01</span>
-                  <p>{t('guideTourStep1')}</p>
-                </div>
-                <div className="guide-step-card">
-                  <span className="guide-step-num">02</span>
-                  <p>{t('guideTourStep2')}</p>
-                </div>
-                <div className="guide-step-card">
-                  <span className="guide-step-num">03</span>
-                  <p>{t('guideTourStep3')}</p>
-                </div>
-                <div className="guide-step-card guide-step-card--human">
-                  <span className="guide-step-num">04</span>
-                  <p>{t('guideTourStep4')}</p>
-                </div>
-              </div>
+              <ol className="guide-steps-list">
+                {TOUR_STEPS.map((stepKey, index) => (
+                  <li
+                    key={stepKey}
+                    className={`guide-step-card ${
+                      index === TOUR_STEPS.length - 1 ? 'guide-step-card--human' : ''
+                    }`}
+                  >
+                    <span className="guide-step-num">{String(index + 1).padStart(2, '0')}</span>
+                    <p>{t(stepKey)}</p>
+                  </li>
+                ))}
+              </ol>
             </div>
           )}
         </div>

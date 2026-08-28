@@ -179,6 +179,28 @@ describe('ReviewPanel', () => {
     if (rejectBtn) expect(rejectBtn).toBeDisabled()
   })
 
+  it('replaces prospective consequence copy with the recorded decision once decided', () => {
+    const { proposal, sim } = makeProposalAndSim()
+    const decided: ReviewProposal = {
+      ...proposal,
+      status: 'approved',
+      decidedAt: '2026-08-28T10:00:00.000Z',
+      auditNote: 'Trigger blocked, control allowed.',
+    }
+    render(
+      <ReviewPanel
+        proposal={decided}
+        simulation={sim}
+        onApprove={() => undefined}
+        onReject={() => undefined}
+      />,
+    )
+    expect(screen.queryByText(/confirming retains the candidate/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/rejecting discards this proposal/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/recorded decision/i)).toBeInTheDocument()
+    expect(screen.getByText(/Trigger blocked, control allowed\./)).toBeInTheDocument()
+  })
+
   it('shows simulation summary if provided', () => {
     const { proposal, sim } = makeProposalAndSim()
     render(
@@ -217,6 +239,33 @@ describe('ReviewPanel', () => {
       </I18nProvider>,
     )
     expect(screen.getByText(/ไม่มีข้อเสนอที่รอดำเนินการ/i)).toBeInTheDocument()
+  })
+
+  it('localizes the consequence-specific confirm action and enforcement outcome in Thai', () => {
+    const { proposal, sim } = makeProposalAndSim()
+    render(
+      <I18nProvider initialLanguage="th">
+        <ReviewPanel proposal={proposal} simulation={sim} onApprove={() => undefined} onReject={() => undefined} />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('การสั่งซื้อยังคงถูกบล็อก')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /ยืนยันเพดานการจัดซื้อ \$50,000 · บล็อกการสั่งซื้อต่อไป/ }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Purchase remains blocked')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /keep purchase blocked/i })).not.toBeInTheDocument()
+  })
+
+  it('localizes the ineligible-evidence refusal in Thai', () => {
+    const { proposal, sim } = makeProposalAndSim()
+    const forged: SimulationResult = { ...sim, enforcement: 'allow' }
+    render(
+      <I18nProvider initialLanguage="th">
+        <ReviewPanel proposal={proposal} simulation={forged} onApprove={() => undefined} onReject={() => undefined} />
+      </I18nProvider>,
+    )
+    expect(screen.getByText(/หลักฐานการจำลองไม่ผ่านเกณฑ์/)).toBeInTheDocument()
+    expect(screen.queryByText(/Replay evidence is not eligible/i)).not.toBeInTheDocument()
   })
 })
 

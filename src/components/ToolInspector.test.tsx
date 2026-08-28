@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { ToolInspector } from './ToolInspector'
+import type { ToolDefinition } from '../tools/manifest'
 
-const TOOL_DEFS = [
+const TOOL_DEFS: ToolDefinition[] = [
   { name: 'list_incidents', description: 'List incidents', schema: {} },
   { name: 'inspect_incident', description: 'Inspect one incident', schema: {} },
 ]

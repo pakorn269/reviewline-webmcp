@@ -1,6 +1,16 @@
+// ReviewPanel — the human review line.
+//
+// Approval and rejection live here and only here. They are never registered as
+// WebMCP tools. Decision controls stay unavailable until the bound replay proves
+// a blocked trigger, an allowed benign control, and zero regressions.
+//
+// MIT License
+
 import { useEffect, useState } from 'react'
 import type { ReviewProposal, SimulationResult } from '../domain/domain'
 import { useI18n } from '../i18n/I18nContext'
+import type { TranslationKey } from '../i18n/types'
+import { formatUsd } from '../lib/format'
 
 interface Props {
   proposal: ReviewProposal | null
@@ -9,16 +19,61 @@ interface Props {
   onReject: (proposalId: string, reviewerId: string, note: string) => void
 }
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(value)
+interface ConsequenceCopy {
+  outcomeKey: TranslationKey
+  ruleKey: TranslationKey
+  unauthorizedKey: TranslationKey
+  confirmKey: TranslationKey
+}
+
+const CONSEQUENCE_BY_INCIDENT: Record<string, ConsequenceCopy> = {
+  'inc-002': {
+    outcomeKey: 'refundRemainsBlocked',
+    ruleKey: 'ruleRefundLimit',
+    unauthorizedKey: 'unauthorizedRefund',
+    confirmKey: 'confirmActionRefund',
+  },
+  'inc-003': {
+    outcomeKey: 'deploymentRemainsBlocked',
+    ruleKey: 'ruleEvidenceAge',
+    unauthorizedKey: 'unauthorizedDeployment',
+    confirmKey: 'confirmActionDeployment',
+  },
+}
+
+const DEFAULT_CONSEQUENCE: ConsequenceCopy = {
+  outcomeKey: 'purchaseRemainsBlocked',
+  ruleKey: 'rulePurchaseCap',
+  unauthorizedKey: 'unauthorizedPurchase',
+  confirmKey: 'confirmActionPurchase',
+}
+
+const STATUS_LABEL_KEY: Record<ReviewProposal['status'], TranslationKey> = {
+  pending: 'statusPending',
+  approved: 'statusApproved',
+  rejected: 'statusRejected',
+}
+
+/** A proposal is decidable only when its own bound replay proves the invariant. */
+function isEvidenceEligible(
+  proposal: ReviewProposal,
+  simulation: SimulationResult | null,
+): boolean {
+  if (!simulation) return false
+  const trigger = simulation.caseResults.find((r) => r.caseId === simulation.triggeringCaseId)
+  const control = simulation.caseResults.find((r) => r.caseId === simulation.benignControlCaseId)
+  return (
+    simulation.simId === proposal.simId &&
+    simulation.incidentId === proposal.incidentId &&
+    simulation.enforcement === 'block' &&
+    simulation.regressions.length === 0 &&
+    trigger?.candidateDecision === 'BLOCKED' &&
+    control?.candidateDecision === 'ALLOWED'
+  )
 }
 
 export function ReviewPanel({ proposal, simulation, onApprove, onReject }: Props) {
-  const { t, language } = useI18n()
+  const { t } = useI18n()
   const [reviewerId, setReviewerId] = useState('')
   const [reviewerNote, setReviewerNote] = useState('')
   const [confirmed, setConfirmed] = useState(false)
@@ -32,158 +87,174 @@ export function ReviewPanel({ proposal, simulation, onApprove, onReject }: Props
   if (!proposal) {
     return (
       <aside className="review-panel review-panel--empty" aria-label={t('reviewPanelAria')}>
-        <p className="review-empty-msg">{t('noProposalPending')}</p>
+        <p className="panel-eyebrow">{t('humanReviewLine')}</p>
+        <p className="empty-msg">{t('noProposalPending')}</p>
+        <p className="empty-hint">{t('noProposalDesc')}</p>
       </aside>
     )
   }
 
   const isPending = proposal.status === 'pending'
-  const triggerResult = simulation?.caseResults.find((result) => result.caseId === simulation.triggeringCaseId)
-  const controlResult = simulation?.caseResults.find((result) => result.caseId === simulation.benignControlCaseId)
-  const evidenceEligible = Boolean(
-    simulation &&
-    simulation.simId === proposal.simId &&
-    simulation.incidentId === proposal.incidentId &&
-    simulation.enforcement === 'block' &&
-    simulation.regressions.length === 0 &&
-    triggerResult?.candidateDecision === 'BLOCKED' &&
-    controlResult?.candidateDecision === 'ALLOWED',
-  )
-  const canDecide = isPending && evidenceEligible && reviewerId.trim().length > 0 && reviewerNote.trim().length > 0 && confirmed
+  const evidenceEligible = isEvidenceEligible(proposal, simulation)
 
   if (isPending && !evidenceEligible) {
     return (
       <aside className="review-panel" aria-label={t('reviewPanelTitle')}>
         <header className="review-header">
           <div>
-            <p className="review-eyebrow">{t('humanReviewLine')}</p>
+            <p className="panel-eyebrow">{t('humanReviewLine')}</p>
             <h3 className="review-title">{proposal.title}</h3>
           </div>
           <span className="review-status review-status--pending">{t('statusPending')}</span>
         </header>
-        <div className="review-body">
-          <section className="review-section">
-            <h4>{t('rationaleHeading')}</h4>
-            <p className="review-rationale">{proposal.rationale}</p>
-          </section>
-          <div className="review-consequence" role="alert">
-            <strong>{t('notEligibleTitle')}</strong>
-            <p>{t('notEligibleDesc')}</p>
-          </div>
+        <section className="review-section">
+          <h4 className="field-label">{t('rationaleHeading')}</h4>
+          <p className="review-rationale">{proposal.rationale}</p>
+        </section>
+        <div className="callout callout--blocked" role="alert">
+          <strong>{t('notEligibleTitle')}</strong>
+          <p>{t('notEligibleDesc')}</p>
         </div>
       </aside>
     )
   }
-  const threshold = simulation ? formatCurrency(simulation.threshold) : 'the candidate threshold'
-  const reviewCopy = (() => {
-    if (proposal.incidentId === 'inc-003') {
-      const hours = simulation ? `${simulation.threshold} h` : 'the candidate'
-      return {
-        outcome: 'Deployment remains blocked',
-        rule: `${hours} evidence-age limit`,
-        unauthorized: 'the deployment remains blocked pending valid evidence and attestation',
-        confirm: `Confirm ${hours} evidence-age limit; keep deployment blocked`,
-      }
-    }
-    if (proposal.incidentId === 'inc-002') {
-      return {
-        outcome: 'Refund remains blocked',
-        rule: `${threshold} refund limit`,
-        unauthorized: 'the refund remains unapproved',
-        confirm: `Confirm ${threshold} refund limit; keep refund blocked`,
-      }
-    }
-    return {
-      outcome: 'Purchase remains blocked',
-      rule: `${threshold} purchase cap`,
-      unauthorized: 'the blocked purchase remains unauthorized',
-      confirm: `Confirm ${threshold} cap; keep purchase blocked`,
-    }
-  })()
+
+  const copy = CONSEQUENCE_BY_INCIDENT[proposal.incidentId] ?? DEFAULT_CONSEQUENCE
+  const thresholdDisplay = simulation
+    ? proposal.incidentId === 'inc-003'
+      ? `${simulation.threshold} h`
+      : formatUsd(simulation.threshold)
+    : null
+  const rule =
+    thresholdDisplay === null
+      ? t('ruleFallback')
+      : t(copy.ruleKey, { threshold: thresholdDisplay })
+  const canDecide =
+    isPending &&
+    evidenceEligible &&
+    reviewerId.trim().length > 0 &&
+    reviewerNote.trim().length > 0 &&
+    confirmed
 
   return (
     <aside className="review-panel" aria-label={t('reviewPanelTitle')}>
       <header className="review-header">
         <div>
-          <p className="review-eyebrow">{t('humanReviewLine')}</p>
+          <p className="panel-eyebrow">{t('humanReviewLine')}</p>
           <h3 className="review-title">{proposal.title}</h3>
         </div>
         <span className={`review-status review-status--${proposal.status}`}>
-          {proposal.status.toUpperCase()}
+          {t(STATUS_LABEL_KEY[proposal.status])}
         </span>
       </header>
 
+      {/* Ordered by what the reviewer needs first: the consequence of confirming,
+          then the state it changes, then why the agent proposed it, then the raw
+          replay identifiers. The body scrolls; the top of it must carry the most
+          decision-relevant facts. */}
       <div className="review-body">
-        <section className="review-section">
-          <h4>{t('rationaleHeading')}</h4>
-          <p className="review-rationale">{proposal.rationale}</p>
-        </section>
+        {isPending ? (
+          <div className="callout callout--consequence" role="note">
+            <strong>{t('consequencesTitle')}</strong>
+            <p>{t('consequenceConfirm', { rule, unauthorized: t(copy.unauthorizedKey) })}</p>
+            <p>{t('consequenceReject')}</p>
+          </div>
+        ) : (
+          proposal.decidedAt && (
+            <div className={`callout callout--${proposal.status}`} role="status">
+              <strong>{t('recordedDecisionHeading')}</strong>
+              <p>
+                {t('recordedDecisionBody', {
+                  status: t(STATUS_LABEL_KEY[proposal.status]),
+                  ts: new Date(proposal.decidedAt).toLocaleString(),
+                })}
+              </p>
+              {proposal.auditNote && (
+                <p className="review-audit-note">
+                  {t('noteLabel')}: {proposal.auditNote}
+                </p>
+              )}
+            </div>
+          )
+        )}
 
-        <section className="review-section" aria-label="Decision state model">
-          <h4>{language === 'th' ? 'สถานะการตัดสินใจ' : 'Decision state'}</h4>
+        <section className="review-section" aria-label={t('decisionStateHeading')}>
+          <h4 className="field-label">{t('decisionStateHeading')}</h4>
           <dl className="decision-state-grid">
-            <div><dt>{language === 'th' ? 'ผลลัพธ์การบังคับใช้' : 'Enforcement outcome'}</dt><dd>{reviewCopy.outcome}</dd></div>
-            <div><dt>{language === 'th' ? 'สถานะการจำลอง' : 'Simulation status'}</dt><dd>{simulation ? (language === 'th' ? t('completedStatus') : 'Completed') : (language === 'th' ? 'ไม่พร้อมใช้งาน' : 'Unavailable')}</dd></div>
-            <div><dt>{language === 'th' ? 'การตรวจสอบโดยมนุษย์' : 'Human review'}</dt><dd>{isPending ? (language === 'th' ? t('awaitingHumanDecision') : 'Awaiting human decision') : proposal.status}</dd></div>
-            <div><dt>{language === 'th' ? 'สถานะเหตุการณ์' : 'Incident state'}</dt><dd>{language === 'th' ? t('openStatus') : 'Open'}</dd></div>
-            <div><dt>{language === 'th' ? 'การปรับใช้นโยบาย' : 'Policy deployment'}</dt><dd>{language === 'th' ? t('noExternalDeployment') : 'No external deployment'}</dd></div>
+            <div>
+              <dt>{t('dsEnforcementOutcome')}</dt>
+              <dd>{t(copy.outcomeKey)}</dd>
+            </div>
+            <div>
+              <dt>{t('dsSimulationStatus')}</dt>
+              <dd>{simulation ? t('completedStatus') : t('simulationUnavailable')}</dd>
+            </div>
+            <div>
+              <dt>{t('dsHumanReview')}</dt>
+              <dd>{isPending ? t('awaitingHumanDecision') : t(STATUS_LABEL_KEY[proposal.status])}</dd>
+            </div>
+            <div>
+              <dt>{t('dsIncidentState')}</dt>
+              <dd>{t('openStatus')}</dd>
+            </div>
+            <div>
+              <dt>{t('dsPolicyDeployment')}</dt>
+              <dd>{t('noExternalDeployment')}</dd>
+            </div>
           </dl>
         </section>
 
-        <div className="review-consequence" role="note">
-          <strong>{language === 'th' ? 'ผลที่ตามมาของการตัดสินใจ' : 'Decision consequences'}</strong>
-          <p>
-            {language === 'th'
-              ? `การยืนยันจะคงไว้ซึ่งข้อเสนอ ${reviewCopy.rule}; ${reviewCopy.unauthorized}.`
-              : `Confirming retains the candidate ${reviewCopy.rule}; ${reviewCopy.unauthorized}.`}
-          </p>
-          <p>
-            {language === 'th'
-              ? 'การปฏิเสธจะยกเลิกข้อเสนอนี้และคงการบล็อกปัจจุบันไว้ ทั้งสองการกระทำจะไม่มีการปรับใช้นโยบายจริงหรือแก้ไขระบบภายนอกใดๆ'
-              : 'Rejecting discards this proposal and keeps the current block in force. Neither action deploys policy or mutates an external system.'}
-          </p>
-        </div>
+        <section className="review-section">
+          <h4 className="field-label">{t('rationaleHeading')}</h4>
+          <p className="review-rationale">{proposal.rationale}</p>
+        </section>
 
         {simulation && (
           <details className="review-section review-sim-summary">
-            <summary>{language === 'th' ? `หลักฐานการจำลอง · ${simulation.resultId}` : `Replay evidence · ${simulation.resultId}`}</summary>
+            <summary>{t('replaySummaryLabel', { resultId: simulation.resultId })}</summary>
             <dl className="review-sim-dl">
-              <div><dt>{language === 'th' ? 'การจำลอง' : 'Simulation'}</dt><dd>{simulation.simId}</dd></div>
-              <div><dt>{language === 'th' ? 'ผลลัพธ์' : 'Result'}</dt><dd><code>{simulation.resultId}</code></dd></div>
-              <div><dt>{language === 'th' ? 'กฎที่แน่นอน' : 'Exact rule'}</dt><dd>{simulation.ruleExpression}</dd></div>
-              <div><dt>{language === 'th' ? 'กรณีที่กระตุ้น' : 'Trigger'}</dt><dd>{simulation.triggeringCaseId} · BLOCKED</dd></div>
-              <div><dt>{language === 'th' ? 'กรณีควบคุมปกติ' : 'Benign control'}</dt><dd>{simulation.benignControlCaseId} · ALLOWED</dd></div>
-              <div><dt>{language === 'th' ? 'การถดถอย' : 'Regressions'}</dt><dd>{simulation.regressions.length}</dd></div>
+              <div>
+                <dt>{t('replayFieldSimulation')}</dt>
+                <dd>{simulation.simId}</dd>
+              </div>
+              <div>
+                <dt>{t('replayFieldResult')}</dt>
+                <dd>
+                  <code>{simulation.resultId}</code>
+                </dd>
+              </div>
+              <div>
+                <dt>{t('exactRule')}</dt>
+                <dd>{simulation.ruleExpression}</dd>
+              </div>
+              <div>
+                <dt>{t('replayFieldTrigger')}</dt>
+                <dd>{simulation.triggeringCaseId} · BLOCKED</dd>
+              </div>
+              <div>
+                <dt>{t('replayFieldControl')}</dt>
+                <dd>{simulation.benignControlCaseId} · ALLOWED</dd>
+              </div>
+              <div>
+                <dt>{t('replayFieldRegressions')}</dt>
+                <dd>{simulation.regressions.length}</dd>
+              </div>
             </dl>
           </details>
         )}
 
-        {proposal.decidedAt && (
-          <section className="review-section">
-            <h4>{language === 'th' ? 'การตัดสินใจที่บันทึกไว้' : 'Recorded decision'}</h4>
-            <p>{proposal.status} at {new Date(proposal.decidedAt).toLocaleString()}</p>
-            {proposal.auditNote && <p className="review-audit-note">{language === 'th' ? 'บันทึก' : 'Note'}: {proposal.auditNote}</p>}
-          </section>
-        )}
       </div>
 
+      {/* The least-authority disclaimer lives in the always-visible authority bar;
+          repeating it here only pushed the decision below the fold. */}
       {isPending ? (
         <form className="review-confirmation" onSubmit={(event) => event.preventDefault()}>
-          <p className="review-actions-note">
-            <strong>{language === 'th' ? 'จำเป็นต้องมีการตัดสินใจโดยมนุษย์' : 'Human decision required.'}</strong>{' '}
-            {language === 'th'
-              ? 'การอนุมัติและการปฏิเสธถูกละเว้นจาก WebMCP manifest โดยเจตนา นี่คือการออกแบบผลิตภัณฑ์ตามสิทธิ์ขั้นต่ำสุด ไม่ใช่การรับประกันการป้องกันการสั่งการของเบราว์เซอร์ทุกรูปแบบ'
-              : 'Approval and rejection are intentionally absent from the WebMCP manifest. This is least-authority product design, not a guarantee against every form of browser actuation.'}
-          </p>
           <p className="review-required-hint">
-            {language === 'th'
-              ? 'กรอกข้อมูลยืนยันที่จำเป็นทั้งสามส่วนเพื่อเปิดใช้งานการตัดสินใจ'
-              : 'Complete all three required confirmations to enable a decision.'}
+            <strong>{t('humanDecisionRequiredTitle')}</strong> {t('requiredConfirmationsHint')}
           </p>
           <label className="review-field">
             <span>
-              {language === 'th' ? 'ตัวตนของผู้ตรวจสอบ' : 'Reviewer identity'}{' '}
-              <strong>({language === 'th' ? 'จำเป็น' : 'required'})</strong>
+              {t('reviewerIdentityLabel')} <strong>({t('requiredMarker')})</strong>
             </span>
             <input
               value={reviewerId}
@@ -195,8 +266,7 @@ export function ReviewPanel({ proposal, simulation, onApprove, onReject }: Props
           </label>
           <label className="review-field">
             <span>
-              {language === 'th' ? 'บันทึกการตรวจสอบ' : 'Review note'}{' '}
-              <strong>({language === 'th' ? 'จำเป็น' : 'required'})</strong>
+              {t('reviewNoteLabel')} <strong>({t('requiredMarker')})</strong>
             </span>
             <textarea
               value={reviewerNote}
@@ -212,10 +282,7 @@ export function ReviewPanel({ proposal, simulation, onApprove, onReject }: Props
               onChange={(event) => setConfirmed(event.target.checked)}
             />
             <span>
-              {language === 'th'
-                ? 'ข้าพเจ้าได้ตรวจสอบหลักฐาน กรณีที่กระตุ้น กรณีควบคุมปกติ และผลกระทบต่อการปรับใช้แล้ว'
-                : 'I reviewed the evidence, trigger, benign control, and deployment consequence.'}{' '}
-              <strong>({language === 'th' ? 'จำเป็น' : 'required'})</strong>
+              {t('confirmEvidenceLabel')} <strong>({t('requiredMarker')})</strong>
             </span>
           </label>
           <div className="review-actions">
@@ -225,7 +292,7 @@ export function ReviewPanel({ proposal, simulation, onApprove, onReject }: Props
               disabled={!canDecide}
               onClick={() => onApprove(proposal.proposalId, reviewerId.trim(), reviewerNote.trim())}
             >
-              {reviewCopy.confirm}
+              {t(copy.confirmKey, { rule })}
             </button>
             <button
               type="button"
@@ -233,13 +300,13 @@ export function ReviewPanel({ proposal, simulation, onApprove, onReject }: Props
               disabled={!canDecide}
               onClick={() => onReject(proposal.proposalId, reviewerId.trim(), reviewerNote.trim())}
             >
-              {language === 'th' ? 'ปฏิเสธข้อเสนอ; บังคับใช้การบล็อกปัจจุบันต่อไป' : 'Reject proposal; keep current block'}
+              {t('rejectProposalKeepBlock')}
             </button>
           </div>
         </form>
       ) : (
         <div className="review-actions review-actions--decided" role="status">
-          {language === 'th' ? 'บันทึกการตัดสินใจของมนุษย์แล้ว ไม่มีการปรับใช้นโยบายภายนอก' : 'Human decision recorded. No external policy was deployed.'}
+          {t('decisionRecordedNote')}
         </div>
       )}
     </aside>

@@ -156,3 +156,89 @@ test.describe('Reviewline — ELI5 Guide & Use Cases Modal', () => {
 
 
 
+
+test.describe('Reviewline — authority boundary is visible without interaction', () => {
+  test('capability manifest and human-only actions render on load', async ({ page }) => {
+    await page.goto('/')
+
+    const manifest = page.getByRole('region', { name: /agent capability manifest/i })
+    await expect(manifest).toBeVisible()
+    await expect(manifest.getByTestId('capability-name')).toHaveCount(5)
+    await expect(
+      manifest.locator('[data-exposure="exposed"] [data-testid="capability-name"]'),
+    ).toHaveText(['list_incidents', 'inspect_incident'])
+
+    const humanOnly = page.getByRole('region', { name: /human-only actions/i })
+    await expect(humanOnly).toBeVisible()
+    await expect(humanOnly.locator('[data-exposure="never"]')).toHaveCount(3)
+    await expect(page.getByTestId('workflow-phase')).toContainText('INVESTIGATION')
+  })
+
+  test('drafting is withheld and the phase advances once a proposal is pending', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.tool-inspector-summary').click()
+    await page.locator('.btn-hero-journey').click()
+
+    await expect(page.getByTestId('workflow-phase')).toContainText('AWAITING_HUMAN_DECISION')
+    const manifest = page.getByRole('region', { name: /agent capability manifest/i })
+    await expect(
+      manifest.locator('[data-exposure="exposed"] [data-testid="capability-name"]'),
+    ).toHaveText(['list_incidents', 'inspect_incident', 'get_review_status'])
+    await expect(
+      manifest.locator('[data-exposure="withheld"] [data-testid="capability-name"]'),
+    ).toHaveText(['simulate_guardrail_patch', 'draft_review_gate'])
+  })
+})
+
+test.describe('Reviewline — the human decision stays reachable', () => {
+  test('both decision controls are inside the review column viewport without scrolling', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto('/')
+    await page.locator('.tool-inspector-summary').click()
+    await page.locator('.btn-hero-journey').click()
+    await expect(page.getByTestId('workflow-phase')).toContainText('AWAITING_HUMAN_DECISION')
+    await page.locator('.tool-inspector-summary').click()
+
+    const confirm = page.locator('.btn-approve')
+    const reject = page.locator('.btn-reject')
+    await expect(confirm).toBeVisible()
+    await expect(reject).toBeVisible()
+
+    const bounds = await page.evaluate(() => {
+      const column = document.querySelector('.app-col--review')!.getBoundingClientRect()
+      const rects = ['.btn-approve', '.btn-reject'].map((selector) =>
+        document.querySelector(selector)!.getBoundingClientRect(),
+      )
+      return {
+        columnTop: column.top,
+        columnBottom: column.bottom,
+        buttons: rects.map((rect) => ({ top: rect.top, bottom: rect.bottom })),
+      }
+    })
+
+    for (const button of bounds.buttons) {
+      expect(button.top).toBeGreaterThanOrEqual(bounds.columnTop)
+      expect(button.bottom).toBeLessThanOrEqual(bounds.columnBottom)
+    }
+  })
+
+  test('the review evidence body scrolls instead of pushing the decision away', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto('/')
+    await page.locator('.tool-inspector-summary').click()
+    await page.locator('.btn-hero-journey').click()
+    await expect(page.getByTestId('workflow-phase')).toContainText('AWAITING_HUMAN_DECISION')
+    await page.locator('.tool-inspector-summary').click()
+
+    const body = page.locator('.review-body')
+    const overflow = await body.evaluate((el) => ({
+      scrollHeight: el.scrollHeight,
+      clientHeight: el.clientHeight,
+      overflowY: getComputedStyle(el).overflowY,
+    }))
+    expect(overflow.overflowY).toBe('auto')
+    expect(overflow.scrollHeight).toBeGreaterThan(overflow.clientHeight)
+  })
+})

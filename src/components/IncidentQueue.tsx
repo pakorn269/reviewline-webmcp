@@ -1,4 +1,5 @@
-// IncidentQueue — displays the list of incidents for triage
+// IncidentQueue — triage list. Selecting an incident is the human's entry point;
+// an agent reaches the same state through inspect_incident.
 // MIT License
 
 import { useMemo } from 'react'
@@ -22,9 +23,10 @@ interface Props {
 export function IncidentQueue({ incidents, selectedId, onSelect }: Props) {
   const { t, language } = useI18n()
 
-  const displayIncidents = useMemo(() => {
-    return incidents.map((inc) => getLocalizedIncident(inc, language))
-  }, [incidents, language])
+  const displayIncidents = useMemo(
+    () => incidents.map((incident) => getLocalizedIncident(incident, language)),
+    [incidents, language],
+  )
 
   return (
     <section className="incident-queue" aria-label={t('incidentQueueRegionAria')}>
@@ -33,30 +35,33 @@ export function IncidentQueue({ incidents, selectedId, onSelect }: Props) {
         <span className="queue-count">{incidents.length}</span>
       </h2>
       <ul className="queue-list" role="list">
-        {displayIncidents.map((inc) => (
-          <li key={inc.id}>
-            <button
-              type="button"
-              className={`queue-item${selectedId === inc.id ? ' queue-item--selected' : ''}`}
-              aria-current={selectedId === inc.id ? 'true' : undefined}
-              onClick={() => onSelect(inc.id)}
-            >
-              <div className="queue-item-header">
-                <span className="queue-item-id">{inc.id}</span>
-                <span className={`severity-badge ${SEVERITY_CLASS[inc.severity] ?? ''}`}>
-                  {inc.severity}
+        {displayIncidents.map((incident) => {
+          const isSelected = selectedId === incident.id
+          return (
+            <li key={incident.id}>
+              <button
+                type="button"
+                className={`queue-item${isSelected ? ' queue-item--selected' : ''}`}
+                aria-current={isSelected ? 'true' : undefined}
+                onClick={() => onSelect(incident.id)}
+              >
+                <span className="queue-item-header">
+                  <code className="queue-item-id">{incident.id}</code>
+                  <span className={`severity-badge ${SEVERITY_CLASS[incident.severity] ?? ''}`}>
+                    {incident.severity}
+                  </span>
+                  <span className="status-badge">{incident.status}</span>
+                  {isSelected && <span className="selection-badge">{t('selectedBadge')}</span>}
                 </span>
-                <span className="status-badge">{inc.status}</span>
-                {selectedId === inc.id && <span className="selection-badge">{t('selectedBadge')}</span>}
-              </div>
-              <div className="queue-item-agent">{inc.agent}</div>
-              <div className="queue-item-summary">{inc.summary}</div>
-              <div className="queue-item-time">
-                {new Date(inc.blockedAt).toLocaleString()}
-              </div>
-            </button>
-          </li>
-        ))}
+                <span className="queue-item-agent">{incident.agent}</span>
+                <span className="queue-item-summary">{incident.summary}</span>
+                <time className="queue-item-time" dateTime={incident.blockedAt}>
+                  {new Date(incident.blockedAt).toLocaleString()}
+                </time>
+              </button>
+            </li>
+          )
+        })}
       </ul>
     </section>
   )
