@@ -205,11 +205,13 @@ try {
       const helper = join(process.cwd(), 'scripts', 'preview-shutdown.mjs')
       await writeFile(script, `
 import { spawnPreview, createCleanup } from '${helper}';
-const { child } = await spawnPreview({ port: ${p} });
-const { cleanup, installSignals, deregisterSignals } = createCleanup(child);
-installSignals();
+let lifecycle;
+await spawnPreview({ port: ${p}, onChild: (child) => {
+  lifecycle = createCleanup(child);
+  lifecycle.installSignals();
+}});
 try { await new Promise(r => setTimeout(r, 120000)); }
-finally { deregisterSignals(); await cleanup(); }
+finally { lifecycle.deregisterSignals(); await lifecycle.cleanup(); }
 `)
       lc = spawn('node', [script], { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'pipe'], detached: true })
       await new Promise(r => lc.once('spawn', r))
@@ -297,13 +299,15 @@ await cleanup();
       const helper = join(process.cwd(), 'scripts', 'preview-shutdown.mjs')
       await writeFile(script, `
 import { spawnPreview, createCleanup } from '${helper}';
-const { child } = await spawnPreview({ port: ${p} });
-const { cleanup, installSignals, deregisterSignals } = createCleanup(child, {
-  getBrowser: () => ({ close: () => new Promise(() => {}) }),
-});
-installSignals();
+let lifecycle;
+await spawnPreview({ port: ${p}, onChild: (child) => {
+  lifecycle = createCleanup(child, {
+    getBrowser: () => ({ close: () => new Promise(() => {}) }),
+  });
+  lifecycle.installSignals();
+}});
 try { await new Promise(r => setTimeout(r, 120000)); }
-finally { deregisterSignals(); await cleanup(); }
+finally { lifecycle.deregisterSignals(); await lifecycle.cleanup(); }
 `)
       owner = spawn(process.execPath, [script], {
         cwd: process.cwd(), stdio: ['ignore', 'pipe', 'pipe'], detached: true,
