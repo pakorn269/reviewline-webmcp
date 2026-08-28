@@ -37,10 +37,12 @@
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-react-refresh": "0.4.20",
     "jsdom": "26.1.0",
+    "parse5": "7.3.0",
     "typescript": "5.8.3",
     "typescript-eslint": "8.34.1",
     "vite": "^6.4.3",
     "vitest": "^3.2.7",
-    "webmcp-types": "^0.1.5"
+    "webmcp-types": "^0.1.5",
+    "yaml": "2.9.0"
   }
 }

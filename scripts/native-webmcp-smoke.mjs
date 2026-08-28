@@ -1,27 +1,40 @@
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
 import process from 'node:process'
 import { chromium } from 'playwright'
+import { spawnPreview, createCleanup } from './preview-shutdown.mjs'
 
 const chromeBin = process.env.CHROME_BIN ?? '/usr/local/bin/google-chrome'
 const port = Number(process.env.REVIEWLINE_SMOKE_PORT ?? 4175)
 const baseUrl = `http://127.0.0.1:${port}`
 const forbiddenToolPattern = /(approve|reject|activate|deploy)/i
 
-const preview = spawn(
-  process.platform === 'win32' ? 'npm.cmd' : 'npm',
-  ['run', 'preview', '--', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
-  { cwd: process.cwd(), env: { ...process.env }, stdio: ['ignore', 'pipe', 'pipe'] },
-)
-
-let previewLog = ''
-preview.stdout.on('data', (chunk) => { previewLog += chunk.toString() })
-preview.stderr.on('data', (chunk) => { previewLog += chunk.toString() })
+// Install cleanup synchronously as soon as the ChildProcess handle exists,
+// before spawnPreview awaits its post-spawn handshake.
+let preview
+let previewLog = () => ''
+let browser
+let lifecycle
+try {
+  const spawned = await spawnPreview({
+    port,
+    onChild: (child) => {
+      preview = child
+      lifecycle = createCleanup(child, { getBrowser: () => browser })
+      lifecycle.installSignals()
+    },
+  })
+  preview = spawned.child
+  previewLog = spawned.log
+} catch (error) {
+  lifecycle?.deregisterSignals()
+  await lifecycle?.cleanup()
+  throw error
+}
 
 async function waitForServer() {
   const deadline = Date.now() + 30_000
   while (Date.now() < deadline) {
-    if (preview.exitCode !== null) throw new Error(`Preview exited early (${preview.exitCode}).\n${previewLog}`)
+    if (preview.exitCode !== null || preview.signalCode !== null) throw new Error(`Preview exited early (code=${preview.exitCode}, signal=${preview.signalCode}).\n${previewLog()}`)
     try {
       const response = await fetch(baseUrl)
       if (response.ok) return
@@ -30,7 +43,7 @@ async function waitForServer() {
     }
     await new Promise((resolve) => setTimeout(resolve, 150))
   }
-  throw new Error(`Preview did not become ready.\n${previewLog}`)
+  throw new Error(`Preview did not become ready.\n${previewLog()}`)
 }
 
 function sorted(names) {
@@ -70,7 +83,6 @@ async function execute(page, name, input) {
   return JSON.parse(serialized)
 }
 
-let browser
 try {
   await waitForServer()
   browser = await chromium.launch({
@@ -175,11 +187,6 @@ try {
 
   await context.close()
 } finally {
-  if (browser) await browser.close()
-  preview.kill('SIGTERM')
-  await new Promise((resolve) => {
-    if (preview.exitCode !== null) return resolve()
-    preview.once('exit', resolve)
-    setTimeout(resolve, 2_000)
-  })
+  lifecycle.deregisterSignals()
+  await lifecycle.cleanup()
 }

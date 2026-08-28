@@ -378,3 +378,76 @@ Current focused accumulation: 300 unit/component/integration tests pass.
 The schema decoder passed exhaustive mutation testing, but retained native tool objects could still read or append timeline events before invoking direct handlers. Every registered transaction—list, inspect, simulate, draft, and status—now descriptor-validates its current AppState as its first operation. Direct simulation and drafting handlers do the same before workflow reads. Regression tests install throwing getters after registration and require zero invocations across all five retained tools.
 
 Current focused accumulation: 303 unit/component/integration tests pass.
+
+## Entries 14–20 — Smoke shutdown, CI hardening, architecture simplification (condensed)
+
+### 14 — Smoke hang fix (original)
+**RED:** `Port 14175 still listening after killPreviewTree — orphan process remains`
+**Fix:** Process-group kill via `process.kill(-pid, 'SIGTERM')` with `detached: true`.
+**GREEN:** 2 tests pass; smoke exits 0, 5 manifests, 24 events, port free.
+
+### 15 — Pages/CI workflow versions
+**RED:** `actions/checkout@v4 below required @v7`; `node-version 20 not 24`
+**Fix:** Both workflows: checkout@v7, setup-node@v7, configure-pages@v6, upload-pages-artifact@v5, deploy-pages@v5, node-version '24'. CI adds `node --test scripts/*.node-test.mjs` step.
+**GREEN:** All workflow tests pass.
+
+### 16–17 — Process-group lifecycle gaps (superseded by 18)
+PGID reuse risk identified; group-based approach replaced in Entry 18.
+
+### 18 — Architecture simplification: direct-child Vite spawn
+**Root cause:** npm intermediary created process tree; group-based fix introduced PGID reuse risk.
+**Fix:** Spawn `node_modules/vite/bin/vite.js` directly. Own one ChildProcess, kill via handle.
+Eliminated: detached groups, negative-PID signaling, `groupAlive`/`signalGroup`/`waitGroupGone`.
+Structural YAML workflow validation via `yaml@2.9.0` replaces regex (immune to comment bypass).
+
+### 19 — Spawn handshake, handle-based kill, validator tightening
+`spawnPreview` async (rejects on missing executable/entry). `killPreview` uses `child.kill()` exclusively. Workflow validator uses exact inventories. Merged signal test; ephemeral ports.
+
+### 20 — Fail-closed corrections
+**RED (B):** `killPreview` returned early when `kill()` returned false without proving exit.
+**GREEN:** Always wait boundedly for exit; escalate to SIGKILL; throw if not exited.
+
+**RED (C):** Signal handler re-raised immediately without awaiting child retirement.
+**GREEN:** Async handler awaits `cleanup()` (SIGTERM→SIGKILL as needed), then `process.exit(143/130)`.
+
+**RED (A):** `validateCiWorkflow` used `.filter(expected.includes)` — extra `actions/evil@v99` passed.
+**GREEN:** Compare full `uses` array directly to exact inventory. `findExpressions()` recursively locates all `${{}}` in parsed values; requires exactly one at `jobs.deploy.environment.url`. Exact workflow filenames and job keys enforced. Synthetic fixtures call same validators.
+
+### Final state (Entry 20)
+```
+node --test scripts/*.node-test.mjs → 19 pass (8 lifecycle + 1 portable-build + 10 workflow)
+npm test → 303 passed | typecheck/lint/build → exit 0
+npm run e2e → 13 passed | audit → 0 vulnerabilities
+smoke:native → exit 0, 5 manifests, 24 events, 0 errors
+Pages build + verifier → verified
+SIGTERM mid-smoke → exit 143, port free, no Vite/esbuild
+actionlint → not installed locally
+```
+
+### 21 — Exact-tree reviewer corrections
+**RED:** real validators accepted extra/suffixed/reordered workflow commands and unsafe permissions/inputs; verifier accepted symlinked `dist` and nested parents; hanging `browser.close()` retained Vite; lock metadata differed; fixture/listener/readiness gaps remained.
+
+**Fix:** exact deep workflow schemas and least-privilege CI permissions; component-by-component symlink rejection including `dist` and `index.html`; canonical lock regeneration; bounded browser close with cleared timeout; first/second-signal child retirement; failure-safe fixtures; cleaned spawn listeners and signal-aware readiness.
+
+**GREEN:** `node --test scripts/*.node-test.mjs` → 27 passed; Vitest 303; E2E 13; typecheck/lint/build/actionlint passed; audit 0; Chrome 152 smoke 5 manifests/24 events/0 errors; exact Pages verifier passed; no retained listener/process/temp residue.
+
+### 22 — Mixed-reference, runner, and pre-handshake corrections
+**RED:** exact validators accepted arbitrary names and `self-hosted`; mixed HTML hid external/single-quoted/wrong-case executable references behind one valid pair; SIGTERM during the spawn handshake leaked the preview child.
+
+**Fix:** exact workflow/job names and `ubuntu-latest`; parse5 validates every script and stylesheet reference; cleanup ownership transfers synchronously before awaiting spawn; `dist/index.html` and all path components must be real non-symlinks; fast browser-close timers are cleared.
+
+**GREEN:** focused suites → 30 passed (13 workflow, 5 portable-build, 12 lifecycle); mixed-reference and pre-handshake signal matrices leave no process, port, or fixture residue.
+
+### 23 — Active HTML and handshake-error closure
+**RED:** semantic workflow names/runners were mutable; active HTML via preload, inline styles/events, iframe/object/embed, `javascript:`, external base, or duplicate attributes escaped the asset inventory; child errors during the 300 ms handshake were unhandled.
+
+**Fix:** exact names/runners; strict parse5 element/attribute allowlist with parse-error rejection and verified script/style/modulepreload/icon URLs; base and inline active content prohibited; one continuous handshake error listener with deterministic cleanup.
+
+**GREEN:** focused suites → 32 passed (13 workflow, 6 portable-build, 13 lifecycle) on Node 24; portable verifier also passes on Node 20; no process, port, timer, or fixture residue.
+
+### 24 — Combined spawn-failure closure
+**RED:** a throwing ownership callback combined with an executable ENOENT left the later ChildProcess error unhandled.
+
+**Fix:** install handshake listeners before invoking `onChild`; callback failure kills the child and drains the protected handshake rejection.
+
+**GREEN:** combined callback+ENOENT subprocess exits cleanly; lifecycle suite 14/14 passed; total dedicated suites 33 passed.
