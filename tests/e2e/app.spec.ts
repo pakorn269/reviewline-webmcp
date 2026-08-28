@@ -108,3 +108,23 @@ test.describe('Reviewline — accessibility basics', () => {
     await expect(page.getByRole('region', { name: /incident queue/i })).toBeVisible()
   })
 })
+
+test.describe('Reviewline — internationalization (i18n)', () => {
+  test('switches language between English and Thai via header toggle', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByText('Agents investigate. Humans authorize.')).toBeVisible()
+
+    const toggleBtn = page.locator('.btn-lang')
+    await expect(toggleBtn).toBeVisible()
+
+    await toggleBtn.click()
+    await expect(page.getByText('เอเจนต์ดำเนินการสืบสวน มนุษย์เป็นผู้อนุมัติ')).toBeVisible()
+    await expect(page.getByRole('button', { name: /รีเซ็ต/i })).toBeVisible()
+
+    await toggleBtn.click()
+    await expect(page.getByText('Agents investigate. Humans authorize.')).toBeVisible()
+    await expect(page.getByRole('button', { name: /reset/i })).toBeVisible()
+  })
+})
+
+

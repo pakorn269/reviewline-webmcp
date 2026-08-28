@@ -2,6 +2,8 @@
 
 **Agents investigate. Humans authorize.**
 
+**English** | [ภาษาไทย](README-TH.md)
+
 Reviewline is a WebMCP-native incident review studio for asymmetric human–agent collaboration. A browser agent investigates a failed autonomous-agent run, replays a candidate guardrail against a triggering case and a named benign control, and drafts an evidence-backed review gate. The agent then stops at a visible human decision line.
 
 The app is a deterministic, client-only contest demo: no backend, credentials, real payments, policy deployment, LLM API, or restored workflow state. Reload and Reset both start a fresh in-memory session.
@@ -14,6 +16,7 @@ Reviewline uses WebMCP for more than typed access to a dashboard:
 - **Least-authority lifecycle:** tools are registered and unregistered as the workflow advances; the agent receives only capabilities useful in the current phase.
 - **Reliable evidence flow:** strict runtime validation, bounded outputs, deterministic result IDs, and explicit untrusted-evidence labeling replace brittle DOM scraping.
 - **Human consequence boundary:** approval and rejection never appear in the WebMCP manifest. A reviewer must identify themselves, leave a note, confirm the evidence, and choose a consequence-specific UI action.
+- **Bilingual operations interface:** supports instant English and Thai (`EN / TH`) toggling for UI views, incident summaries, trace events, and session timeline evidence, while preserving canonical English WebMCP tool protocols.
 
 Omitting decision tools is a **product capability boundary, not a cryptographic guarantee** against every possible browser automation technique. Reviewline makes authority narrower and auditable; it does not claim the DOM is an impenetrable security boundary.
 
@@ -55,7 +58,7 @@ npm test                # unit + component + integration
 npm run typecheck       # TypeScript, no emit
 npm run lint            # zero-warning ESLint policy
 npm run build           # production bundle
-npm run e2e             # Playwright, including 320px target checks
+npm run e2e             # Playwright, including i18n and 320px target checks
 npm run audit:security  # moderate threshold
 npm run smoke:native    # Chrome 152 native dynamic-manifest journey
 ```

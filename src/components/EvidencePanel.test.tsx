@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { EvidencePanel } from './EvidencePanel'
+import { I18nProvider } from '../i18n/I18nContext'
 import { makeInitialState } from '../domain/domain'
 
 describe('EvidencePanel', () => {
@@ -28,4 +29,16 @@ describe('EvidencePanel', () => {
     const blockItems = container.querySelectorAll('.trace-entry--block')
     expect(blockItems.length).toBeGreaterThan(0)
   })
+
+  it('renders localized Thai trace and cohort when language is th', () => {
+    const { incidents } = makeInitialState()
+    render(
+      <I18nProvider initialLanguage="th">
+        <EvidencePanel incident={incidents[0]} />
+      </I18nProvider>,
+    )
+    expect(screen.getByText(/เอเจนต์ดึงข้อมูลหน้าแค็ตตาล็อกซัพพลายเออร์/)).toBeInTheDocument()
+    expect(screen.getByText(/คำสั่งซื้อที่ถูกบล็อก \(พรอมต์แทรกแซง\)/)).toBeInTheDocument()
+  })
 })
+

@@ -222,4 +222,16 @@ describe('App', () => {
     expect(getItemSpy).not.toHaveBeenCalledWith('reviewline-state-v1')
     getItemSpy.mockRestore()
   })
+
+  it('toggles interface language between English and Thai via the header toggle button', async () => {
+    await act(async () => { render(<App />) })
+    expect(screen.getByText('Agents investigate. Humans authorize.')).toBeInTheDocument()
+    const langBtn = screen.getByRole('button', { name: /switch language/i })
+    await act(async () => { fireEvent.click(langBtn) })
+    expect(screen.getByText('เอเจนต์ดำเนินการสืบสวน มนุษย์เป็นผู้อนุมัติ')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /รีเซ็ตสถานะการสาธิต/i })).toBeInTheDocument()
+    await act(async () => { fireEvent.click(langBtn) })
+    expect(screen.getByText('Agents investigate. Humans authorize.')).toBeInTheDocument()
+  })
 })
+

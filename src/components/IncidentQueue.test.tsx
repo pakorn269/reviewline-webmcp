@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { IncidentQueue } from './IncidentQueue'
+import { I18nProvider } from '../i18n/I18nContext'
 import { makeInitialState } from '../domain/domain'
 
 describe('IncidentQueue', () => {
@@ -59,4 +60,20 @@ describe('IncidentQueue', () => {
     expect(selected).not.toBeNull()
     expect(screen.getByText('Selected')).toBeInTheDocument()
   })
+
+  it('renders localized Thai summary and agent name when language is th', () => {
+    const state = makeInitialState()
+    render(
+      <I18nProvider initialLanguage="th">
+        <IncidentQueue
+          incidents={state.incidents}
+          selectedId={null}
+          onSelect={() => undefined}
+        />
+      </I18nProvider>,
+    )
+    expect(screen.getByText(/เอเจนต์ฝ่ายจัดซื้อ/)).toBeInTheDocument()
+    expect(screen.getByText(/เนื้อหาในหน้าเพจของซัพพลายเออร์พยายามแทนที่เพดานการจัดซื้อ/)).toBeInTheDocument()
+  })
 })
+

@@ -94,16 +94,32 @@ JSON Schema guides the browser agent, but every handler independently rejects ma
 
 See [SECURITY.md](../SECURITY.md) for the boundary caveat and [webmcp-testing.md](webmcp-testing.md) for native verification.
 
+## Internationalization (i18n) and presentation boundaries
+
+Reviewline provides a bilingual operator interface supporting English (`en`) and Thai (`th`) via a state-driven toggle in the header action bar.
+
+- **Invariant preservation:** Machine-level WebMCP identifiers (`list_incidents`, `inspect_incident`, `simulate_guardrail_patch`, `draft_review_gate`, `get_review_status`), domain record schemas, simulation mathematics, and tool return payloads remain strictly canonical English ASCII.
+- **Typed dictionary schema:** `TranslationDictionary` guarantees compile-time key symmetry between `en.ts` and `th.ts`.
+- **Presentation mapping:** `getLocalizedIncident` and `getLocalizedEvent` dynamically map incident summaries, traces, cohort cases, event kinds, and actor titles for human display when Thai mode is active without mutating underlying domain fixtures or affecting agent tool transactions.
+- **Accessibility:** The language toggle adheres to WCAG touch targets (44px min height/width), keyboard focus, and localized dynamic `aria-label` tags.
+
 ## Key paths
 
 ```text
 src/domain/domain.ts                 deterministic state and replay engine
 src/tools/tools.ts                   validation and bounded tool contracts
 src/tools/registration.ts            dynamic native registration and tool-call evidence
+src/i18n/types.ts                    strongly typed dictionary schema
+src/i18n/en.ts, th.ts                bilingual translation dictionaries
+src/i18n/I18nContext.tsx             state-driven i18n provider and hook
+src/i18n/incidentTranslations.ts     localized incident summary/trace/cohort mapper
+src/i18n/timelineTranslations.ts     localized session timeline mapper
+src/components/LanguageToggle.tsx    accessible EN/TH toggle component
 src/components/SimulationView.tsx    per-case counterfactual UI
 src/components/ReviewPanel.tsx        UI-only reviewed decision
 src/components/SessionTimeline.tsx    visible append-only session evidence
 scripts/native-webmcp-smoke.mjs       Chrome 152 native journey
 evals/*.json                          machine-readable expected manifests/invariants
-tests/e2e/app.spec.ts                 responsive and browser UI checks
+tests/e2e/app.spec.ts                 responsive, i18n, and browser UI checks
 ```
+

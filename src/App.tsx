@@ -20,6 +20,8 @@ import { ReviewPanel } from './components/ReviewPanel'
 import { AuditLog } from './components/AuditLog'
 import { ToolInspector } from './components/ToolInspector'
 import { SessionTimeline } from './components/SessionTimeline'
+import { LanguageToggle } from './components/LanguageToggle'
+import { I18nProvider, useI18n } from './i18n/I18nContext'
 import {
   createSerializedStateTransactions,
   getAvailableToolNames,
@@ -101,7 +103,8 @@ interface PendingToolCommit {
   timeout: ReturnType<typeof setTimeout>
 }
 
-export function App() {
+function AppContent() {
+  const { t } = useI18n()
   const [state, setStateRaw] = useState<AppState>(() => makeInitialState())
   const [webmcpAvailable, setWebmcpAvailable] = useState(false)
   const abortRef = useRef<AbortController>(new AbortController())
@@ -279,22 +282,23 @@ export function App() {
         <div className="app-header-inner">
           <h1 className="app-title">
             <span className="app-title-main">Reviewline</span>
-            <span className="app-title-tagline">Agents investigate. Humans authorize.</span>
+            <span className="app-title-tagline">{t('tagline')}</span>
           </h1>
           <div className="app-header-actions">
             <span
               className={`webmcp-indicator ${webmcpAvailable ? 'webmcp-indicator--active' : 'webmcp-indicator--inactive'}`}
-              title={webmcpAvailable ? 'WebMCP tools registered' : 'WebMCP not available'}
+              title={webmcpAvailable ? t('webmcpActiveTitle') : t('webmcpInactiveTitle')}
             >
-              {webmcpAvailable ? 'WebMCP ✓' : 'WebMCP —'}
+              {webmcpAvailable ? t('webmcpActive') : t('webmcpInactive')}
             </span>
+            <LanguageToggle />
             <button
               type="button"
               className="btn btn-reset"
               onClick={handleReset}
-              aria-label="Reset demo state"
+              aria-label={t('resetDemoStateAria')}
             >
-              Reset
+              {t('reset')}
             </button>
           </div>
         </div>
@@ -337,11 +341,19 @@ export function App() {
       <footer className="app-footer">
         <details className="tool-inspector-details">
           <summary className="tool-inspector-summary">
-            WebMCP Tool Inspector ({availableToolDefs.length} tools)
+            {t('toolInspectorSummary', { count: availableToolDefs.length })}
           </summary>
           <ToolInspector tools={availableToolDefs} webmcpAvailable={webmcpAvailable} />
         </details>
       </footer>
     </div>
+  )
+}
+
+export function App() {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
   )
 }

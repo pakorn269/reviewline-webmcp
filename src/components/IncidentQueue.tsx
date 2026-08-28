@@ -1,7 +1,10 @@
 // IncidentQueue — displays the list of incidents for triage
 // MIT License
 
+import { useMemo } from 'react'
 import type { Incident } from '../domain/domain'
+import { useI18n } from '../i18n/I18nContext'
+import { getLocalizedIncident } from '../i18n/incidentTranslations'
 
 const SEVERITY_CLASS: Record<string, string> = {
   critical: 'sev-critical',
@@ -17,14 +20,20 @@ interface Props {
 }
 
 export function IncidentQueue({ incidents, selectedId, onSelect }: Props) {
+  const { t, language } = useI18n()
+
+  const displayIncidents = useMemo(() => {
+    return incidents.map((inc) => getLocalizedIncident(inc, language))
+  }, [incidents, language])
+
   return (
-    <section className="incident-queue" aria-label="Incident queue">
+    <section className="incident-queue" aria-label={t('incidentQueueRegionAria')}>
       <h2 className="queue-heading">
-        Incidents
+        {t('incidentQueueTitle')}
         <span className="queue-count">{incidents.length}</span>
       </h2>
       <ul className="queue-list" role="list">
-        {incidents.map((inc) => (
+        {displayIncidents.map((inc) => (
           <li key={inc.id}>
             <button
               type="button"
@@ -38,7 +47,7 @@ export function IncidentQueue({ incidents, selectedId, onSelect }: Props) {
                   {inc.severity}
                 </span>
                 <span className="status-badge">{inc.status}</span>
-                {selectedId === inc.id && <span className="selection-badge">Selected</span>}
+                {selectedId === inc.id && <span className="selection-badge">{t('selectedBadge')}</span>}
               </div>
               <div className="queue-item-agent">{inc.agent}</div>
               <div className="queue-item-summary">{inc.summary}</div>

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ReviewPanel } from './ReviewPanel'
+import { I18nProvider } from '../i18n/I18nContext'
 import { makeInitialState, runSimulation, draftProposal, resetCounters } from '../domain/domain'
 import type { ReviewProposal, SimulationResult } from '../domain/domain'
 
@@ -208,4 +209,14 @@ describe('ReviewPanel', () => {
     expect(screen.getByLabelText(/reviewed the evidence/i)).not.toBeChecked()
     expect(screen.getByRole('button', { name: /confirm.*keep purchase blocked/i })).toBeDisabled()
   })
+
+  it('renders Thai copy when language is set to Thai', () => {
+    render(
+      <I18nProvider initialLanguage="th">
+        <ReviewPanel proposal={null} simulation={null} onApprove={() => undefined} onReject={() => undefined} />
+      </I18nProvider>,
+    )
+    expect(screen.getByText(/ไม่มีข้อเสนอที่รอดำเนินการ/i)).toBeInTheDocument()
+  })
 })
+

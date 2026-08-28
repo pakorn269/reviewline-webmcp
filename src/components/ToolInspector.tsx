@@ -1,5 +1,4 @@
-// ToolInspector — fallback dev harness showing registered tools in normal browsers
-// MIT License
+import { useI18n } from '../i18n/I18nContext'
 
 interface ToolDef {
   name: string
@@ -13,17 +12,19 @@ interface Props {
 }
 
 export function ToolInspector({ tools, webmcpAvailable }: Props) {
+  const { t } = useI18n()
+
   return (
-    <section className="tool-inspector" aria-label="WebMCP tool inspector">
+    <section className="tool-inspector" aria-label={t('toolInspectorAria')}>
       <header className="inspector-header">
-        <h3 className="inspector-title">WebMCP Tools</h3>
+        <h3 className="inspector-title">{t('toolInspectorTitle')}</h3>
         {webmcpAvailable ? (
           <span className="inspector-status inspector-status--ok">
-            ✓ Registered ({tools.length})
+            {t('registeredStatus', { count: tools.length })}
           </span>
         ) : (
           <span className="inspector-status inspector-status--fallback">
-            WebMCP not available — dev inspector mode
+            {t('fallbackStatus')}
           </span>
         )}
       </header>
@@ -34,7 +35,7 @@ export function ToolInspector({ tools, webmcpAvailable }: Props) {
             <code className="inspector-tool-name">{tool.name}</code>
             <p className="inspector-tool-desc">{tool.description}</p>
             <details className="inspector-schema">
-              <summary>Input Schema</summary>
+              <summary>{t('inputSchemaSummary')}</summary>
               <pre className="inspector-schema-pre">
                 {JSON.stringify(tool.schema, null, 2)}
               </pre>

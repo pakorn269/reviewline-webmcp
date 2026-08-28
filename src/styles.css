@@ -231,6 +231,38 @@ summary {
   color: var(--color-text);
 }
 
+.btn-lang {
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 6px 12px;
+  gap: 4px;
+}
+
+.btn-lang:hover:not(:disabled) {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.lang-option {
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+  transition: color var(--transition);
+}
+
+.lang-option--active {
+  color: var(--color-accent-bright);
+  font-weight: 700;
+}
+
+.lang-divider {
+  color: var(--color-border);
+}
+
+
 .btn-approve {
   background: #0f2a18;
   color: var(--color-approve);

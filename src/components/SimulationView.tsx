@@ -1,4 +1,5 @@
 import type { CohortCaseResult, SimulationResult } from '../domain/domain'
+import { useI18n } from '../i18n/I18nContext'
 
 interface Props {
   simulation: SimulationResult | null
@@ -18,10 +19,12 @@ function decisionPath(result: CohortCaseResult): string {
 }
 
 export function SimulationView({ simulation }: Props) {
+  const { t } = useI18n()
+
   if (!simulation) {
     return (
       <section className="simulation-view simulation-view--empty" aria-label="Simulation results">
-        <p className="simulation-empty-msg">No simulation run yet. Use simulate_guardrail_patch to replay a rule.</p>
+        <p className="simulation-empty-msg">{t('simulationEmpty')}</p>
       </section>
     )
   }
@@ -29,31 +32,31 @@ export function SimulationView({ simulation }: Props) {
   const hasRegressions = simulation.regressions.length > 0
 
   return (
-    <section className="simulation-view" aria-label={`Simulation ${simulation.simId}`}>
+    <section className="simulation-view" aria-label={t('simAria', { simId: simulation.simId })}>
       <header className="sim-header">
         <div>
-          <p className="sim-eyebrow">Counterfactual replay</p>
+          <p className="sim-eyebrow">{t('counterfactualReplay')}</p>
           <h3 className="sim-title">Simulation {simulation.simId}</h3>
         </div>
-        <span className="sim-completion">Completed</span>
+        <span className="sim-completion">{t('simCompleted')}</span>
       </header>
 
       <dl className="sim-provenance">
-        <div><dt>Result identity</dt><dd><code>{simulation.resultId}</code></dd></div>
-        <div><dt>Baseline policy</dt><dd>{simulation.baselinePolicyVersion}</dd></div>
-        <div><dt>Candidate policy</dt><dd>{simulation.candidatePolicyVersion}</dd></div>
-        <div><dt>Executed</dt><dd><time dateTime={simulation.createdAt}>{new Date(simulation.createdAt).toLocaleString()}</time></dd></div>
+        <div><dt>{t('resultIdentity')}</dt><dd><code>{simulation.resultId}</code></dd></div>
+        <div><dt>{t('baselinePolicy')}</dt><dd>{simulation.baselinePolicyVersion}</dd></div>
+        <div><dt>{t('candidatePolicy')}</dt><dd>{simulation.candidatePolicyVersion}</dd></div>
+        <div><dt>{t('executedAt')}</dt><dd><time dateTime={simulation.createdAt}>{new Date(simulation.createdAt).toLocaleString()}</time></dd></div>
       </dl>
 
       <div className="sim-rule-expression">
-        <span>Exact rule</span>
+        <span>{t('exactRule')}</span>
         <code>{simulation.ruleExpression}</code>
       </div>
 
       <div className="sim-meta">
-        <span className="sim-rule">Rule: {simulation.ruleKind}</span>
-        <span className="sim-threshold">Threshold: {simulation.ruleKind === 'stale_evidence' ? `${simulation.threshold} h` : formatAmount(simulation.threshold)}</span>
-        <span className="sim-enforcement">Enforcement: {simulation.enforcement}</span>
+        <span className="sim-rule">{t('ruleLabel', { ruleKind: simulation.ruleKind })}</span>
+        <span className="sim-threshold">{t('thresholdLabel', { threshold: simulation.ruleKind === 'stale_evidence' ? `${simulation.threshold} h` : formatAmount(simulation.threshold) })}</span>
+        <span className="sim-enforcement">{t('enforcementLabel', { enforcement: simulation.enforcement })}</span>
       </div>
 
       <div className="sim-cohort-results" aria-label="Candidate outcome totals">

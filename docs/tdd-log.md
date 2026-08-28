@@ -451,3 +451,181 @@ actionlint → not installed locally
 **Fix:** install handshake listeners before invoking `onChild`; callback failure kills the child and drains the protected handshake rejection.
 
 **GREEN:** combined callback+ENOENT subprocess exits cleanly; lifecycle suite 14/14 passed; total dedicated suites 33 passed.
+
+---
+
+### 25 — RED/GREEN — Internationalization (i18n) English/Thai dictionaries and context
+
+**RED Command:**
+```
+npx vitest run src/i18n/i18n.test.tsx
+```
+**Result (RED):**
+```
+FAIL  src/i18n/i18n.test.tsx
+Error: Failed to resolve import "./translations" from "src/i18n/i18n.test.tsx". Does the file exist?
+```
+
+**Files created:**
+- `src/i18n/types.ts` — TypeScript types for `Language` (`'en' | 'th'`) and `TranslationDictionary` schema
+- `src/i18n/en.ts` — Complete English dictionary matching baseline interface copy
+- `src/i18n/th.ts` — Complete Thai dictionary adapted for AI safety / incident operations console
+- `src/i18n/translations.ts` — Combined translations dictionary and parameter interpolation helper
+- `src/i18n/I18nContext.tsx` — React context, provider, and `useI18n()` hook
+
+**GREEN Command:**
+```
+npx vitest run src/i18n/i18n.test.tsx
+```
+**Result (GREEN):**
+```
+✓ src/i18n/i18n.test.tsx (5 tests) 16ms
+Test Files  1 passed (1)
+     Tests  5 passed (5)
+```
+
+---
+
+### 26 — RED/GREEN — State-driven LanguageToggle and UI localization integration
+
+**RED Command:**
+```
+npx vitest run src/components/LanguageToggle.test.tsx
+```
+**Result (RED):**
+```
+FAIL  src/components/LanguageToggle.test.tsx
+Error: Failed to resolve import "./LanguageToggle" from "src/components/LanguageToggle.test.tsx". Does the file exist?
+```
+
+**Implementation & Integration:**
+- `src/components/LanguageToggle.tsx` — State-driven toggle button displaying active language badge with 44px min-height
+- `src/styles.css` — High-contrast dark operations-console styling for `.btn-lang`, `.lang-option`, and `.lang-divider`
+- `src/App.tsx` — Wrapped with `I18nProvider`, placed `LanguageToggle` in header actions, localized tagline, reset button, and tool inspector summary
+- `src/components/IncidentQueue.tsx`, `EvidencePanel.tsx`, `SimulationView.tsx`, `ReviewPanel.tsx`, `AuditLog.tsx`, `SessionTimeline.tsx`, `ToolInspector.tsx` — Localized headings, status labels, aria regions, empty states, and decision copy
+- `tests/e2e/app.spec.ts` — Added E2E language toggle journey test
+
+**GREEN Commands & Quality Gates:**
+```
+npx vitest run src/components/LanguageToggle.test.tsx
+  ✓ src/components/LanguageToggle.test.tsx (3 tests)
+
+npm test
+  Test Files  13 passed (13)
+  Tests       313 passed (313)
+
+npm run typecheck
+  exit 0 (no errors)
+
+npm run lint
+  exit 0 (zero warnings)
+
+npm run e2e
+  14 passed (9.8s)
+
+npm run build
+  built in 753ms (exit 0)
+
+npm audit --audit-level=moderate
+  found 0 vulnerabilities
+```
+
+---
+
+### 27 — RED/GREEN — Incident content localization (summaries, agents, traces, cohort cases)
+
+**Slice:**
+Dynamically translate synthetic incident summaries, agent names, trace events, and cohort cases when Thai language is active while retaining canonical English domain records and WebMCP tool outputs.
+
+**RED Command:**
+```
+npx vitest run src/i18n/incidentTranslations.test.ts
+```
+
+**Result (RED):**
+```
+FAIL  src/i18n/incidentTranslations.test.ts
+Error: Failed to resolve import "./incidentTranslations" from "src/i18n/incidentTranslations.test.ts". Does the file exist?
+```
+
+**Files created & updated:**
+- `src/i18n/incidentTranslations.ts` — `getLocalizedIncident` mapper translating summaries, agents, trace messages, and cohort cases for all three incidents (`inc-001`, `inc-002`, `inc-003`)
+- `src/components/IncidentQueue.tsx` — Map visible incidents through `getLocalizedIncident` with active language
+- `src/components/EvidencePanel.tsx` — Map selected incident through `getLocalizedIncident` with active language
+- `src/components/IncidentQueue.test.tsx` — Added test verifying Thai summary and agent name in queue
+- `src/components/EvidencePanel.test.tsx` — Added test verifying Thai trace steps and cohort items in evidence panel
+
+**GREEN Commands & Quality Gates:**
+```
+npx vitest run src/i18n/incidentTranslations.test.ts
+  ✓ src/i18n/incidentTranslations.test.ts (3 tests)
+
+npm test
+  Test Files  14 passed (14)
+  Tests       318 passed (318)
+
+npm run typecheck
+  exit 0 (no errors)
+
+npm run lint
+  exit 0 (zero warnings)
+
+npm run e2e
+  14 passed (9.3s)
+
+npm run build
+  built in 740ms (exit 0)
+
+npm audit --audit-level=moderate
+  found 0 vulnerabilities
+```
+
+---
+
+### 28 — RED/GREEN — Session timeline event localization (kinds, actors, details)
+
+**Slice:**
+Translate session timeline event kinds (`registered`, `workflow`, `invoked`, etc.), actors (`system`, `human`, `agent`), and event details (capability lifecycle notifications, incident selections, invocation statuses) when Thai is active, while keeping original technical tool identifiers intact.
+
+**RED Command:**
+```
+npx vitest run src/i18n/timelineTranslations.test.ts
+```
+
+**Result (RED):**
+```
+FAIL  src/i18n/timelineTranslations.test.ts
+Error: Failed to resolve import "./timelineTranslations" from "src/i18n/timelineTranslations.test.ts". Does the file exist?
+```
+
+**Files created & updated:**
+- `src/i18n/timelineTranslations.ts` — `getLocalizedEvent` mapper translating kinds, actors, and details for session events
+- `src/components/SessionTimeline.tsx` — Display localized event kinds, actors, and details in `SessionTimeline`
+- `src/components/SessionTimeline.test.tsx` — Added test verifying Thai timeline headings, kinds, and actors
+
+**GREEN Commands & Quality Gates:**
+```
+npx vitest run src/i18n/timelineTranslations.test.ts
+  ✓ src/i18n/timelineTranslations.test.ts (3 tests)
+
+npm test
+  Test Files  15 passed (15)
+  Tests       322 passed (322)
+
+npm run typecheck
+  exit 0 (no errors)
+
+npm run lint
+  exit 0 (zero warnings)
+
+npm run e2e
+  14 passed (9.6s)
+
+npm run build
+  built in 865ms (exit 0)
+
+npm audit --audit-level=moderate
+  found 0 vulnerabilities
+```
+
+
