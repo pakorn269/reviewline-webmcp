@@ -625,7 +625,116 @@ npm run build
   built in 865ms (exit 0)
 
 npm audit --audit-level=moderate
+---
+
+## Entry 15 — RED/GREEN — Bilingual ELI5 Guide & Real-World Use Cases Modal
+
+### Slice
+Bilingual ELI5 Guide and Real-World Use Cases Modal (`Eli5GuideModal`): accessible modal dialog (`role="dialog"`, `aria-modal="true"`, Escape/backdrop handling, `?` keyboard shortcut), explaining the core mental model ("AI is the Detective, Human is the Judge"), WebMCP dynamic least-authority invariants, 4 concrete industry use cases (Procurement Overrides, Support Refunds, DevOps Deployment Gates, AI Safety & Jailbreak Defense), and a 3-minute self-test tour, fully localized in English and Thai without compromising the Operate-surface design principles.
+
+### RED evidence
+
+**RED Command:**
+```
+npx vitest run src/components/Eli5GuideModal.test.tsx
+```
+
+**Result (RED):**
+```
+FAIL  src/components/Eli5GuideModal.test.tsx
+Error: Failed to resolve import "./Eli5GuideModal" from "src/components/Eli5GuideModal.test.tsx". Does the file exist?
+```
+
+**Files created & updated:**
+- `src/i18n/types.ts` — Translation dictionary keys for ELI5 concepts, WebMCP rationale, 4 use cases, and 3-minute tour
+- `src/i18n/en.ts` — Complete English translations for guide modal, tabs, cards, and accessibility labels
+- `src/i18n/th.ts` — Complete natural Thai translations for guide modal, tabs, cards, and accessibility labels
+- `src/components/Eli5GuideModal.tsx` — Accessible dialog component with tabbed navigation, dark theme cards, and keyboard/focus management
+- `src/components/Eli5GuideModal.test.tsx` — Unit/component tests covering render, tab switching, keyboard Escape, and English/Thai localization
+- `src/App.tsx` — `guideOpen` state, `?` global keyboard shortcut, `.btn-guide` in header actions, and modal rendering
+- `src/App.test.tsx` — Integration tests for opening/closing guide via button click and `?` shortcut
+- `src/styles.css` — Styling for `.btn-guide`, `.modal-backdrop`, `.guide-modal`, tabbed content, usecase cards, and mobile responsive adaptations
+- `tests/e2e/app.spec.ts` — Playwright E2E test verifying modal opening, tab navigation, Escape closing, and `?` shortcut
+
+### GREEN Commands & Quality Gates:
+```
+npx vitest run src/components/Eli5GuideModal.test.tsx
+  ✓ src/components/Eli5GuideModal.test.tsx (5 tests) 93ms
+
+npm test
+  Test Files  16 passed (16)
+  Tests       331 passed (331)
+
+npm run typecheck
+  exit 0 (no errors)
+
+npm run lint
+  exit 0 (zero warnings)
+
+npm run e2e
+  15 passed (9.7s)
+
+npm run build
+  built in 757ms (exit 0)
+
+---
+
+## Entry 16 — RED/GREEN — Interactive WebMCP Tool Runner & Hero Journey Simulator
+
+### Slice
+Interactive in-app WebMCP Tool Execution Test Harness and 1-Click Hero Agent Journey Simulator (`ToolInspector`): enables reviewers on any standard browser to execute registered tools directly (`▶ Execute`), view structured outputs, and run the 3-step automated Hero Agent Journey (`⚡ Run 3-Step Hero Journey`), maintaining strict state synchronization and least-authority tool unregistration without exposing human decision controls.
+
+### RED evidence
+
+**RED Command:**
+```
+npx vitest run src/components/ToolInspector.test.tsx
+```
+
+**Result (RED):**
+```
+FAIL  src/components/ToolInspector.test.tsx > ToolInspector > renders execute buttons for tools and calls onExecuteTool when clicked
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name `/execute/i`
+
+FAIL  src/components/ToolInspector.test.tsx > ToolInspector > renders hero journey button and calls onRunHeroJourney when clicked
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name `/hero/i`
+```
+
+**Files created & updated:**
+- `src/tools/registration.ts` — Exported `executeToolByName` executing available tools through the transactional lifecycle with least-authority checks
+- `src/i18n/types.ts` — Added keys for `executeTool`, `executingTool`, `runHeroJourney`, `runningHeroJourney`, `parametersLabel`, `toolOutputLabel`
+- `src/i18n/en.ts` — English copy for interactive tool execution and hero journey runner
+- `src/i18n/th.ts` — Thai copy for interactive tool execution and hero journey runner
+- `src/components/ToolInspector.tsx` — Interactive execution runner, default argument builder, result output display, and hero journey trigger
+- `src/components/ToolInspector.test.tsx` — Unit tests for tool execution callbacks and hero journey button
+- `src/App.tsx` — Implemented `handleExecuteTool` and `handleRunHeroJourney`, connected to `ToolInspector`
+- `src/styles.css` — Styling for `.btn-hero-journey`, `.btn-tool-exec`, `.inspector-params-details`, and output viewers
+
+### GREEN Commands & Quality Gates:
+```
+npx vitest run src/components/ToolInspector.test.tsx
+  ✓ src/components/ToolInspector.test.tsx (5 tests) 89ms
+
+npm test
+  Test Files  16 passed (16)
+  Tests       331 passed (331)
+
+npm run typecheck
+  exit 0 (no errors)
+
+npm run lint
+  exit 0 (zero warnings)
+
+npm run e2e
+  15 passed (19.1s)
+
+npm run build
+  built in 1.12s (exit 0)
+
+npm run audit:security
   found 0 vulnerabilities
 ```
+
+
 
 

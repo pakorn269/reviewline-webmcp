@@ -95,6 +95,58 @@ export interface TranslationDictionary {
   registeredStatus: string
   fallbackStatus: string
   inputSchemaSummary: string
+  executeTool: string
+  executingTool: string
+  runHeroJourney: string
+  runningHeroJourney: string
+  parametersLabel: string
+  toolOutputLabel: string
+
+  // Guide Modal
+  guideButton: string
+  guideButtonAria: string
+  guideButtonTitle: string
+  guideModalTitle: string
+  guideModalCloseAria: string
+  guideModalClose: string
+  guideTabConcept: string
+  guideTabWebmcp: string
+  guideTabUsecases: string
+  guideTabTour: string
+  guideConceptTitle: string
+  guideConceptSubtitle: string
+  guideDetectiveTitle: string
+  guideDetectiveDesc: string
+  guideJudgeTitle: string
+  guideJudgeDesc: string
+  guideWebmcpTitle: string
+  guideWebmcpSubtitle: string
+  guideWebmcpPoint1Title: string
+  guideWebmcpPoint1Desc: string
+  guideWebmcpPoint2Title: string
+  guideWebmcpPoint2Desc: string
+  guideWebmcpPoint3Title: string
+  guideWebmcpPoint3Desc: string
+  guideUsecasesTitle: string
+  guideUsecasesSubtitle: string
+  guideUsecase1Title: string
+  guideUsecase1Desc: string
+  guideUsecase1Demo: string
+  guideUsecase2Title: string
+  guideUsecase2Desc: string
+  guideUsecase2Demo: string
+  guideUsecase3Title: string
+  guideUsecase3Desc: string
+  guideUsecase3Demo: string
+  guideUsecase4Title: string
+  guideUsecase4Desc: string
+  guideUsecase4Demo: string
+  guideTourTitle: string
+  guideTourSubtitle: string
+  guideTourStep1: string
+  guideTourStep2: string
+  guideTourStep3: string
+  guideTourStep4: string
 }
 
 export type TranslationKey = keyof TranslationDictionary

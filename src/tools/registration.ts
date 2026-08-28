@@ -471,3 +471,137 @@ export async function tryRegisterTools(
     return false
   }
 }
+
+/**
+ * Execute an available Reviewline tool directly through the transactional lifecycle.
+ * Used by the interactive in-app Tool Inspector test harness.
+ */
+export async function executeToolByName(
+  getState: GetState,
+  runTransaction: RunStateTransaction,
+  toolName: ReviewlineToolName,
+  input: Record<string, unknown>,
+): Promise<unknown> {
+  const current = getState()
+  const available = getAvailableToolNames(current)
+  if (!available.includes(toolName)) {
+    throw new Error(`Tool "${toolName}" is not available in the current workflow phase (${current.workflowPhase})`)
+  }
+
+  switch (toolName) {
+    case 'list_incidents':
+      return runTransaction((curr) => {
+        if (!isDescriptorSafeAppState(curr)) throw new Error('Invalid canonical review state')
+        const state = appendTimelineEvent(curr, {
+          kind: 'invoked',
+          actor: 'agent',
+          toolName: 'list_incidents',
+          detail: 'Agent requested the bounded incident queue.',
+        })
+        const typed = input as unknown as ListIncidentsInput
+        const result = handleListIncidents(state, typed)
+        const nextState = appendTimelineEvent(state, {
+          kind: 'result',
+          actor: 'system',
+          toolName: 'list_incidents',
+          detail: `Returned ${result.total} incident summary record(s).`,
+        })
+        return { nextState, result }
+      })
+
+    case 'inspect_incident':
+      return runTransaction((curr) => {
+        if (!isDescriptorSafeAppState(curr)) throw new Error('Invalid canonical review state')
+        const id = (input['incident_id'] as string) || 'inc-001'
+        const invokedState = appendTimelineEvent(curr, {
+          kind: 'invoked',
+          actor: 'agent',
+          toolName: 'inspect_incident',
+          detail: `Agent requested bounded evidence for ${id}.`,
+        })
+        const result = handleInspectIncident(invokedState, { incident_id: id })
+        const selectedState = invokedState.selectedIncidentId === result.id
+          ? invokedState
+          : appendTimelineEvent({ ...invokedState, selectedIncidentId: result.id }, {
+              kind: 'workflow',
+              actor: 'agent',
+              detail: `Incident selected: ${result.id}`,
+            })
+        const nextState = appendTimelineEvent(selectedState, {
+          kind: 'result',
+          actor: 'system',
+          toolName: 'inspect_incident',
+          detail: `Focused ${result.id}; simulation capability is now available.`,
+        })
+        return { nextState, result }
+      })
+
+    case 'simulate_guardrail_patch':
+      return runTransaction((curr) => {
+        if (!isDescriptorSafeAppState(curr)) throw new Error('Invalid canonical review state')
+        if (
+          (curr.workflowPhase !== 'INVESTIGATION' && curr.workflowPhase !== 'REPLAY_READY') ||
+          curr.selectedIncidentId !== input['incident_id']
+        ) {
+          throw new Error('Least-authority precondition failed: simulation capability is no longer available')
+        }
+        const invokedState = appendTimelineEvent(curr, {
+          kind: 'invoked',
+          actor: 'agent',
+          toolName: 'simulate_guardrail_patch',
+          detail: `Agent requested a deterministic replay for ${String(input['incident_id'])}.`,
+        })
+        const typed = input as unknown as SimulateInput
+        const { nextState, output } = handleSimulateGuardrailPatch(invokedState, typed)
+        const completedState = appendTimelineEvent(nextState, {
+          kind: 'result',
+          actor: 'system',
+          toolName: 'simulate_guardrail_patch',
+          detail: `Replay ${output.resultId} completed with ${output.regressions.length} regression(s).`,
+        })
+        return { nextState: completedState, result: output }
+      })
+
+    case 'draft_review_gate':
+      return runTransaction((curr) => {
+        if (!isDescriptorSafeAppState(curr)) throw new Error('Invalid canonical review state')
+        const invokedState = appendTimelineEvent(curr, {
+          kind: 'invoked',
+          actor: 'agent',
+          toolName: 'draft_review_gate',
+          detail: `Agent requested a review gate for ${String(input['incident_id'])}.`,
+        })
+        const typed = input as unknown as DraftReviewGateInput
+        const { nextState, output } = handleDraftReviewGate(invokedState, typed)
+        const completedState = appendTimelineEvent(nextState, {
+          kind: 'result',
+          actor: 'system',
+          toolName: 'draft_review_gate',
+          detail: `Proposal ${output.proposalId} is awaiting a human decision; no policy was deployed.`,
+        })
+        return { nextState: completedState, result: output }
+      })
+
+    case 'get_review_status':
+      return runTransaction((curr) => {
+        if (!isDescriptorSafeAppState(curr)) throw new Error('Invalid canonical review state')
+        const proposalId = input['proposal_id'] as string
+        const invokedState = appendTimelineEvent(curr, {
+          kind: 'invoked',
+          actor: 'agent',
+          toolName: 'get_review_status',
+          detail: `Agent requested the human decision for ${proposalId}.`,
+        })
+        const result = handleGetReviewStatus(invokedState, input)
+        const focusedState = { ...invokedState, focusedProposalId: result.proposalId }
+        const completedState = appendTimelineEvent(focusedState, {
+          kind: 'result',
+          actor: 'system',
+          toolName: 'get_review_status',
+          detail: `Proposal ${result.proposalId} status is ${result.status}.`,
+        })
+        return { nextState: completedState, result }
+      })
+  }
+}
+

@@ -127,4 +127,32 @@ test.describe('Reviewline — internationalization (i18n)', () => {
   })
 })
 
+test.describe('Reviewline — ELI5 Guide & Use Cases Modal', () => {
+  test('opens guide modal, displays ELI5 concept, and closes on Escape', async ({ page }) => {
+    await page.goto('/')
+    const guideBtn = page.locator('.btn-guide')
+    await expect(guideBtn).toBeVisible()
+
+    await guideBtn.click()
+    const modal = page.getByRole('dialog')
+    await expect(modal).toBeVisible()
+    await expect(page.getByText(/Reviewline Guide/i)).toBeVisible()
+    await expect(page.getByText(/The AI is the Detective/i)).toBeVisible()
+
+    // Test tab navigation
+    const usecasesTab = page.getByRole('tab', { name: /Real-World Use Cases/i })
+    await usecasesTab.click()
+    await expect(page.getByText(/Procurement & Expense Overrides/i)).toBeVisible()
+
+    // Test close via Escape
+    await page.keyboard.press('Escape')
+    await expect(modal).not.toBeVisible()
+
+    // Test open via ? shortcut
+    await page.keyboard.press('?')
+    await expect(modal).toBeVisible()
+  })
+})
+
+
 

@@ -103,23 +103,33 @@ Reviewline provides a bilingual operator interface supporting English (`en`) and
 - **Presentation mapping:** `getLocalizedIncident` and `getLocalizedEvent` dynamically map incident summaries, traces, cohort cases, event kinds, and actor titles for human display when Thai mode is active without mutating underlying domain fixtures or affecting agent tool transactions.
 - **Accessibility:** The language toggle adheres to WCAG touch targets (44px min height/width), keyboard focus, and localized dynamic `aria-label` tags.
 
+## In-app interactive test harness and ELI5 guide
+
+To ensure full demonstrability on standard browsers lacking experimental WebMCP flags:
+
+- **Direct execution (`executeToolByName`):** `ToolInspector` provides an in-app interactive test harness exposing a `▶ Execute` action for every currently registered tool with precomputed valid parameters. Executions flow through the canonical `runToolTransaction` pipeline, logging real `invoked` (actor: agent) and `result` (actor: system) events in the session timeline.
+- **Hero Agent Journey Simulator:** Evaluators can trigger the 3-step automated investigation (`inspect_incident` → `simulate_guardrail_patch` → `draft_review_gate`) in one click, observing real-time state synchronization, counterfactual replay with zero regressions, and automatic capability unregistration as the workflow enters `AWAITING_HUMAN_DECISION`.
+- **ELI5 Guide Modal (`Eli5GuideModal`):** Accessible dialog (`?` keyboard shortcut) detailing the "Detective (AI) vs Judge (Human)" mental model, WebMCP safety invariants, and 4 real-world enterprise use cases across procurement, customer support refunds, DevOps deployment gates, and AI jailbreak defense.
+
 ## Key paths
 
 ```text
 src/domain/domain.ts                 deterministic state and replay engine
 src/tools/tools.ts                   validation and bounded tool contracts
-src/tools/registration.ts            dynamic native registration and tool-call evidence
+src/tools/registration.ts            dynamic native registration, tool-call evidence, and direct runner
 src/i18n/types.ts                    strongly typed dictionary schema
 src/i18n/en.ts, th.ts                bilingual translation dictionaries
 src/i18n/I18nContext.tsx             state-driven i18n provider and hook
 src/i18n/incidentTranslations.ts     localized incident summary/trace/cohort mapper
 src/i18n/timelineTranslations.ts     localized session timeline mapper
 src/components/LanguageToggle.tsx    accessible EN/TH toggle component
+src/components/Eli5GuideModal.tsx    bilingual ELI5 mental model and 4 use cases modal
+src/components/ToolInspector.tsx     interactive tool execution harness and hero journey simulator
 src/components/SimulationView.tsx    per-case counterfactual UI
 src/components/ReviewPanel.tsx        UI-only reviewed decision
 src/components/SessionTimeline.tsx    visible append-only session evidence
 scripts/native-webmcp-smoke.mjs       Chrome 152 native journey
 evals/*.json                          machine-readable expected manifests/invariants
-tests/e2e/app.spec.ts                 responsive, i18n, and browser UI checks
+tests/e2e/app.spec.ts                 responsive, i18n, guide, and browser UI checks
 ```
 

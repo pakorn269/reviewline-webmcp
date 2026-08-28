@@ -233,5 +233,31 @@ describe('App', () => {
     await act(async () => { fireEvent.click(langBtn) })
     expect(screen.getByText('Agents investigate. Humans authorize.')).toBeInTheDocument()
   })
+
+  it('opens and closes the ELI5 Guide modal via the header button and Escape key', async () => {
+    await act(async () => { render(<App />) })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    const guideBtn = screen.getByRole('button', { name: /guide/i })
+    await act(async () => { fireEvent.click(guideBtn) })
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText(/Explain Like I'm 5/i)).toBeInTheDocument()
+
+    await act(async () => { fireEvent.keyDown(window, { key: 'Escape' }) })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('toggles the ELI5 Guide modal via the ? keyboard shortcut', async () => {
+    await act(async () => { render(<App />) })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await act(async () => { fireEvent.keyDown(window, { key: '?' }) })
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await act(async () => { fireEvent.keyDown(window, { key: '?' }) })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
 })
+
 

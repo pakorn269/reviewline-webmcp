@@ -17,6 +17,7 @@ Reviewline uses WebMCP for more than typed access to a dashboard:
 - **Reliable evidence flow:** strict runtime validation, bounded outputs, deterministic result IDs, and explicit untrusted-evidence labeling replace brittle DOM scraping.
 - **Human consequence boundary:** approval and rejection never appear in the WebMCP manifest. A reviewer must identify themselves, leave a note, confirm the evidence, and choose a consequence-specific UI action.
 - **Bilingual operations interface:** supports instant English and Thai (`EN / TH`) toggling for UI views, incident summaries, trace events, and session timeline evidence, while preserving canonical English WebMCP tool protocols.
+- **In-app interactive test harness & ELI5 guide:** includes a built-in mental model modal (`?`) explaining "Agents investigate, Humans authorize" with 4 enterprise use cases, plus an interactive Tool Inspector allowing direct execution (`▶ Execute`) and a 1-click automated Hero Journey (`⚡ Run 3-Step Hero Journey`) on any standard browser.
 
 Omitting decision tools is a **product capability boundary, not a cryptographic guarantee** against every possible browser automation technique. Reviewline makes authority narrower and auditable; it does not claim the DOM is an impenetrable security boundary.
 
@@ -49,7 +50,7 @@ npm install
 npm run dev             # http://localhost:5173
 ```
 
-Normal browsers get the same state-aware in-page Tool Inspector. WebMCP-capable Chromium exposes native tools through `document.modelContext`.
+Normal browsers get the interactive in-page Tool Inspector test harness with single-click Hero Journey simulation. WebMCP-capable Chromium exposes native tools through `document.modelContext`.
 
 ## Verification
 

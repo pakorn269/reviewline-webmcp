@@ -21,12 +21,15 @@ import { AuditLog } from './components/AuditLog'
 import { ToolInspector } from './components/ToolInspector'
 import { SessionTimeline } from './components/SessionTimeline'
 import { LanguageToggle } from './components/LanguageToggle'
+import { Eli5GuideModal } from './components/Eli5GuideModal'
 import { I18nProvider, useI18n } from './i18n/I18nContext'
 import {
   createSerializedStateTransactions,
   getAvailableToolNames,
   tryRegisterTools,
+  executeToolByName,
   type RunStateTransaction,
+  type ReviewlineToolName,
 } from './tools/registration'
 
 const TOOL_DEFS = [
@@ -107,6 +110,7 @@ function AppContent() {
   const { t } = useI18n()
   const [state, setStateRaw] = useState<AppState>(() => makeInitialState())
   const [webmcpAvailable, setWebmcpAvailable] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
   const abortRef = useRef<AbortController>(new AbortController())
   const previousManifestRef = useRef<string[]>([])
   const availableToolNames = getAvailableToolNames(state)
@@ -138,6 +142,23 @@ function AppContent() {
       pending.reject(new Error('Tool state commit cancelled because Reviewline unmounted'))
     }
     pendingToolCommitsRef.current = []
+  }, [])
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const activeElement = document.activeElement
+      const isInput =
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement ||
+        activeElement?.getAttribute('contenteditable') === 'true'
+
+      if (e.key === '?' && !isInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault()
+        setGuideOpen((prev) => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
   }, [])
 
   const setState = useCallback((updater: (prev: AppState) => AppState) => {
@@ -251,6 +272,38 @@ function AppContent() {
     setStateRaw(makeInitialState())
   }, [])
 
+  const handleExecuteTool = useCallback(
+    async (toolName: ReviewlineToolName, input: Record<string, unknown>) => {
+      return executeToolByName(getState, runToolTransaction, toolName, input)
+    },
+    [getState, runToolTransaction],
+  )
+
+  const handleRunHeroJourney = useCallback(async () => {
+    // Step 1: inspect inc-001
+    await executeToolByName(getState, runToolTransaction, 'inspect_incident', { incident_id: 'inc-001' })
+    await new Promise((r) => setTimeout(r, 600))
+
+    // Step 2: simulate guardrail patch with threshold 50000
+    await executeToolByName(getState, runToolTransaction, 'simulate_guardrail_patch', {
+      incident_id: 'inc-001',
+      rule_kind: 'spending_cap',
+      threshold: 50000,
+      enforcement: 'block',
+    })
+    await new Promise((r) => setTimeout(r, 600))
+
+    // Step 3: draft review gate
+    const latestState = getState()
+    const simId = latestState.activeSimId || 'sim-0001'
+    await executeToolByName(getState, runToolTransaction, 'draft_review_gate', {
+      incident_id: 'inc-001',
+      title: 'Cap procurement at $50,000',
+      rationale: 'Replay proves trigger purchase blocked and benign control passes with 0 regressions.',
+      sim_id: simId,
+    })
+  }, [getState, runToolTransaction])
+
   const selectedIncident: Incident | null =
     state.selectedIncidentId
       ? (state.incidents.find((i) => i.id === state.selectedIncidentId) ?? null)
@@ -291,6 +344,16 @@ function AppContent() {
             >
               {webmcpAvailable ? t('webmcpActive') : t('webmcpInactive')}
             </span>
+            <button
+              type="button"
+              className="btn btn-guide"
+              onClick={() => setGuideOpen(true)}
+              aria-label={t('guideButtonAria')}
+              title={t('guideButtonTitle')}
+            >
+              <span className="btn-guide-icon" aria-hidden="true">?</span>
+              <span>{t('guideButton')}</span>
+            </button>
             <LanguageToggle />
             <button
               type="button"
@@ -343,9 +406,19 @@ function AppContent() {
           <summary className="tool-inspector-summary">
             {t('toolInspectorSummary', { count: availableToolDefs.length })}
           </summary>
-          <ToolInspector tools={availableToolDefs} webmcpAvailable={webmcpAvailable} />
+          <ToolInspector
+            tools={availableToolDefs}
+            webmcpAvailable={webmcpAvailable}
+            selectedIncidentId={state.selectedIncidentId}
+            activeSimId={state.activeSimId}
+            focusedProposalId={state.focusedProposalId}
+            onExecuteTool={handleExecuteTool}
+            onRunHeroJourney={handleRunHeroJourney}
+          />
         </details>
       </footer>
+
+      <Eli5GuideModal isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
   )
 }
